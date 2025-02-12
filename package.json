@@ -27,6 +27,6 @@
   },
   "dependencies": {
     "bootstrap": "^5.2.0-beta1",
-    "archimate-js": "file:../dspn-js"
+    "archimate-js": "file:../dspn-diagrammodel"
   }
 }
