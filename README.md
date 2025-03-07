@@ -1,24 +1,50 @@
-# dspn-js modeler demo
+# React + TypeScript + Vite
 
-This demo is deeply based on the [archimate-js-demo](https://github.com/archimodel/archimate-js-demo) and [archimate-js](https://github.com/archimodel/archimate-js) projects with a large reuse of the existing code.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Building the demo
-Install the project dependencies via 
-```shell
-npm install
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+
+- Configure the top-level `parserOptions` property like this:
+
+```js
+export default tseslint.config({
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
 ```
-Create and run the demo in the `public` folder
-```shell
-npm run start
+
+- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
+- Optionally add `...tseslint.configs.stylisticTypeChecked`
+- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+
+```js
+// eslint.config.js
+import react from 'eslint-plugin-react'
+
+export default tseslint.config({
+  // Set the react version
+  settings: { react: { version: '18.3' } },
+  plugins: {
+    // Add the react plugin
+    react,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended rules
+    ...react.configs.recommended.rules,
+    ...react.configs['jsx-runtime'].rules,
+  },
+})
 ```
-
-## Testing/developing dson-js with the demo
-- Download dspn-js and open this project in your IDE.
-  - Install the project dependencies via `npm install`.
-- Download dspn-js-demo and open this project in your IDE.
-  - Edit package.json file and replace "dspn-js": "0.0.x" with your local dspn-js project path (eg. "dspn-js": "file:../dspn-js").
-- Install dspn-js-demo project dependencies via `npm install`.
-- Run the demo with `npm run start`
-
-## Licence
-MIT
