@@ -28,6 +28,13 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  width: 100%; /* Ensure body takes full width */
+  height: 100%; /* Ensure body takes full height */
+}
+
+#root {
+  width: 100%; /* Ensure root takes full width */
+  height: 100%; /* Ensure root takes full height */
 }
 
 h1 {

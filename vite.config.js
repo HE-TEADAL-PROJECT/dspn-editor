@@ -5,11 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    fs: {
-      allow: [
-        '../',
-        '../dspn-diagrammodel/'
-      ]
-    }
-  }
+    port: 3000,
+  },
 })
