@@ -1,40 +1,52 @@
 import { Handle, Node, NodeProps, Position } from "@xyflow/react";
-import { InputNodeData, PolicyNodeData } from "../../types/nodeTypes";
+import { NodeData } from "../../types/nodeTypes";
 import { Box } from "@chakra-ui/react";
 import BaseComponent from "./BaseComponent";
-import { inputColor, outputColor, policyColor } from "../../constants/nodesDefinitions";
+import { defaultColor, inputColor, outputColor, policyColor } from "../../constants/nodesDefinitions";
 
-type InputNode = Node<InputNodeData, "string">;
+type InputNode = Node<NodeData, "string">;
 
 export function InputComponent({
-  data: { label, node }, selected
+  id, data: { label, parentOf }, selected
 }:NodeProps<InputNode>) {
   return <Box pos = {"relative"}>
-		<BaseComponent label={label} color={inputColor} id = {node.id} selected = {selected} parentOf={node.parentOf}/>
+		<BaseComponent label={label} color={inputColor} id = {id} selected = {selected} parentOf={parentOf}/>
 		<Handle type="source" position={Position.Right} id = "right" />
 		<Handle type="source" position={Position.Left} id = "left" />
 	</Box>;
 }
 
-type PolicyNode = Node<PolicyNodeData, "string">;
+type PolicyNode = Node<NodeData, "string">;
 
 export function PolicyComponent({
-	data: { label }, selected
+	id, data: { label }, selected
 }:NodeProps<PolicyNode>) {
 	return <Box pos = {"relative"}>
-		<BaseComponent label={label} color={policyColor} selected = {selected}/>
+		<BaseComponent label={label} color={policyColor} id = {id} selected = {selected}/>
 		<Handle type="source" position={Position.Right} id = "right" />
 		<Handle type="source" position={Position.Left} id = "left" />
 	</Box>;
 }
 
-type OutputNode = Node<PolicyNodeData, "string">;
+type OutputNode = Node<NodeData, "string">;
 
 export function OutputComponent({
-	data: { label }, selected
+	id, data: { label }, selected
 }:NodeProps<OutputNode>) {
 	return <Box pos = {"relative"}>
-		<BaseComponent label={label} color={outputColor} selected = {selected}/>
+		<BaseComponent label={label} color={outputColor} id = {id} selected = {selected}/>
+		<Handle type="source" position={Position.Right} id = "right" />
+		<Handle type="source" position={Position.Left} id = "left" />
+	</Box>;
+}
+
+type DefaultNode = Node<NodeData, "string">;
+
+export function DefaultComponent({
+	id, data: { label }, selected
+}:NodeProps<DefaultNode>) {
+	return <Box pos = {"relative"}>
+		<BaseComponent label={label} color={defaultColor} id = {id} selected = {selected}/>
 		<Handle type="source" position={Position.Right} id = "right" />
 		<Handle type="source" position={Position.Left} id = "left" />
 	</Box>;

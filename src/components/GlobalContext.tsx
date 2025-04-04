@@ -1,18 +1,20 @@
 import { createContext } from 'react';
 import { OpenAPI } from '../types/OpenAPI';
-import { nodeComponent } from '../types/nodeTypes';
+import { FieldItem, ResourceItem, ResponseItem } from '../types/componentTypes';
 
 interface GlobalContextType  {
   openAPI: OpenAPI | undefined;
   setOpenAPI: (openAPI: OpenAPI | undefined) => void;
   showAPI: boolean;
   setShowAPI: (showAPI: boolean) => void;
-  resourceInputs: nodeComponent[];
-  setResourceInputs: React.Dispatch<React.SetStateAction<nodeComponent[]>>;
-  resourceSchemaInputs: nodeComponent[];
-  setResourceSchemaInputs: React.Dispatch<React.SetStateAction<nodeComponent[]>>;
-  resourceFieldInputs: nodeComponent[];
-  setResourceFieldInputs: React.Dispatch<React.SetStateAction<nodeComponent[]>>;
+  resourceInputs: ResourceItem[];
+  setResourceInputs: React.Dispatch<React.SetStateAction<ResourceItem[]>>;
+  resourceResponseInputs: ResponseItem[];
+  setResourceResponseInputs: React.Dispatch<React.SetStateAction<ResponseItem[]>>;
+  resourceParametersInputs: FieldItem[];
+  setResourceParametersInputs: React.Dispatch<React.SetStateAction<FieldItem[]>>;
+  resourceFieldInputs: FieldItem[];
+  setResourceFieldInputs: React.Dispatch<React.SetStateAction<FieldItem[]>>;
   isMenuOpen: boolean;
   setIsMenuOpen: (isMenuOpen: boolean) => void;
 }
@@ -25,8 +27,10 @@ const defaultValue: GlobalContextType = {
   setShowAPI: () => {},
   resourceInputs: [],
   setResourceInputs: () => {},
-  resourceSchemaInputs: [],
-  setResourceSchemaInputs: () => {},
+  resourceParametersInputs: [],
+  setResourceParametersInputs: () => {},
+  resourceResponseInputs: [],
+  setResourceResponseInputs: () => {},
   resourceFieldInputs: [],
   setResourceFieldInputs: () => {},
   isMenuOpen: false,

@@ -22,10 +22,18 @@ export interface PathItem {
 
 export interface Operation {
   operationId: string;
-  parameters: object[];
+  parameters?: Parameter[];
   summary: string;
   description?: string;
   responses: Responses;
+}
+
+export interface Parameter {
+  name: string;
+  in: string;
+  required: boolean;
+  description?: string;
+  schema: Schema;
 }
 
 export interface Responses {
@@ -50,9 +58,14 @@ export interface Schema {
   type?: string;
   items?: Schema;
   properties?: {
-    [propertyName: string]: Schema;
+    [propertyName: string]: Property;
   };
   required?: string[];
+}
+
+export interface Property {
+  type: string;
+  example?: string;
 }
 
 export interface Components {

@@ -5,15 +5,15 @@ import { bottomButtonHoverColor, bottomButtonColor } from "../constants/default"
 import { useState, useContext, useEffect } from "react";
 import { GlobalContext } from "./GlobalContext";
 import useParse from "./UseParse";
-import { OpenAPI, Schema } from "../types/OpenAPI";
-import { createNodeComponent, InputNodeType, nodeComponent, NodeType } from "../types/nodeTypes";
+import { OpenAPI, Parameter,} from "../types/OpenAPI";
+import { FieldItem, ResourceItem, ResponseItem } from "../types/componentTypes";
 
 export default function PanelActions() {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const {parsedFile: openAPI, isLoaded: isOpenAPILoaded} = useParse(fileContent);
   const { setOpenAPI } = useContext(GlobalContext);
 
-  const { setResourceInputs, setResourceSchemaInputs, setResourceFieldInputs } = useContext(GlobalContext);
+  const { setResourceInputs, setResourceResponseInputs, setResourceParametersInputs, setResourceFieldInputs } = useContext(GlobalContext);
   
   function importModel() {
     console.log("Import Model");
@@ -59,104 +59,134 @@ export default function PanelActions() {
     input.click();
   }
 
-  function analyzeOpenAPI(model: OpenAPI) {
-    console.log("Analyzing OpenAPI...");
+// This function analyzes the OpenAPI object and retrieves the resources, responses, parameters and fields  
+function analyzeOpenAPI (openAPI : OpenAPI) {
+  const resources: ResourceItem[] = [];
+  const responses: ResponseItem[] = [];
+  const fields: FieldItem[] = [];
+  const parameters: FieldItem[] = [];
 
-    try{
-      const resourceInputs: nodeComponent[] = [];
-      const resourceSchemaInputs: nodeComponent[] = [];
-      const resourceFieldInputs: nodeComponent[] = [];
 
-      const paths = Object.keys(model.paths) ?? [];
+  // Retrieve the response names that are produced by the GET methods
+  const paths = Object.keys(openAPI.paths) ?? [];
+  
+  for (const path in paths) {
+    const resource = paths[path];
+    const methods = Object.keys(openAPI.paths[resource]) ?? [];
+    
+    const producedResponse = [];
+    let requestedParameters: Parameter[] = [];
 
-      for(let path = 0; path < paths.length; path++){
-        const resource = paths[path];
-        const resourceNode = createNodeComponent(
-          {
-            numberID: resourceInputs.length,
-            label: resource,
-            type: NodeType.Input,
-            subType: InputNodeType.Resource,
-            summary: model.paths[paths[path]].get.summary
-          }
-        );
-        resourceInputs.push(resourceNode);
+    for(const method in methods) {
+      if(methods[method].toLowerCase() == 'get'){
+        const ref = openAPI.paths[paths[path]][methods[method]].responses['200'].content!['application/json'].schema.$$ref;
+        if (ref) {
+          const responseName = ref.split('/')[ref.split('/').length - 1];
+          requestedParameters = openAPI.paths[paths[path]][methods[method]].parameters || [];
+          producedResponse.push(responseName);
+        }
+      }
+    }
+
+    //Retrieve responses and fields
+    for (const responseName in openAPI.components!.schemas) {
+      // Check if the response is produced by a GET method, if not, skip
+      if(!producedResponse.includes(responseName)) continue;
+      
+      const response = openAPI.components!.schemas[responseName];
+      const responseLabel = resource + ":get." + responseName;
+      const responseItem: ResponseItem = {
+        name: responseName,
+        label: responseLabel,
+        properties: [],
+        resourceIndex: resources.length,
+        index: responses.length,
+        canBeAdded: true,
+        tag: "Response",
+      };
+  
+      let properties = response.properties;
+      let prefix = '';
+      //If the response is an array, create a field for the items TODO: Check if the items are objects or arrays
+      if(response.type == 'array'){
+        properties = response.items!.properties;
         
-        const methods = Object.keys(model.paths[paths[path]]) ?? [];
-        for(let method = 0; method < methods.length; method++){
-          if(methods[method].toLowerCase() == 'get' &&
-          model.paths[paths[path]][methods[method]].responses['200'].content &&
-            model.paths[paths[path]][methods[method]].responses['200'].content!['application/json']?.schema?.$$ref
-          ){ //Only GET methods and schema exists
-            const ref = model.paths[paths[path]][methods[method]].responses['200'].content!['application/json'].schema.$$ref;
-            if (ref) {
-              const schemaName = ref.split('/')[ref.split('/').length - 1];
-              const label = resource + ":" + methods[method] + "." + schemaName;
-              const summary = model.paths[paths[path]][methods[method]].responses['200'].content!['application/json'].schema.type ?? 'Object';
-              const schemaNode = createNodeComponent(
-                {
-                  numberID: resourceSchemaInputs.length,
-                  label: label,
-                  type: NodeType.Input,
-                  subType: InputNodeType.Schema,
-                  summary: summary,
-                  canBeConnectedTo: [resourceNode.id]
-                }
-              );
-              resourceSchemaInputs.push(schemaNode);
+        const subRef = response.items!.$$ref;
+        const subResponseName = subRef!.split('/')[subRef!.split('/').length - 1];
+        prefix = '.' + subResponseName;
 
-              if(model.components?.schemas){
-                let schema: Schema = model.components?.schemas[schemaName];
-                let prefix = '';
-                if(schema.type == 'array'){
-                  const itemsNode = createNodeComponent(
-                    {
-                      numberID: resourceFieldInputs.length,
-                      label: label + ".items",
-                      type: NodeType.Input,
-                      subType: InputNodeType.Field,
-                      summary: schema.items!.type,
-                      canBeConnectedTo: [schemaNode.id]
-                    }
-                  );
-                  resourceFieldInputs.push(itemsNode);
-                  const subRef = schema.items!.$$ref;
-                  const subSchemaName = subRef!.split('/')[subRef!.split('/').length - 1];
-                  prefix = '.' + subSchemaName;
-                  schema = model.components?.schemas[subSchemaName];
-                }
-                if(schema.properties){
-                  const fields = Object.keys(schema.properties);
-                  for(let field = 0; field < fields.length; field++){
-                    const description = schema.properties[fields[field]].type ?? 'attribute';
-                    const fieldNode = createNodeComponent(
-                      {
-                        numberID: resourceFieldInputs.length,
-                        label: label + prefix + "." + fields[field],
-                        type: NodeType.Input,
-                        subType: InputNodeType.Field,
-                        summary: description,
-                        canBeConnectedTo: [schemaNode.id]
-                      }
-                    );
-                    resourceFieldInputs.push(fieldNode);
-                  } // End of fields loop
-                }
-              }
-            }
-          }
-        } // End of methods loop
-      } // End of paths loop
-      setResourceInputs(resourceInputs);
-      setResourceSchemaInputs(resourceSchemaInputs);
-      setResourceFieldInputs(resourceFieldInputs);
+        const fieldItems: FieldItem = {
+          name: 'items',
+          label: responseLabel + ".items",
+          type: response.type,
+          responseIndex: responses.length,
+          index: fields.length,
+          canBeAdded: true,
+          tag: "Field",
+        };
+        responseItem.properties.push(fieldItems);
+        fields.push(fieldItems);
+      }
 
-      console.log("OpenAPI analyzed: ", resourceInputs, resourceSchemaInputs, resourceFieldInputs);
+      for (const propertyName in properties) {
+        const property = properties[propertyName];
+        const fieldItem: FieldItem = {
+          name: propertyName,
+          label: responseLabel + prefix + "." + propertyName,
+          type: property.type || 'object',
+          responseIndex: responses.length,
+          index: fields.length,
+          required: response.required?.includes(propertyName),
+          canBeAdded: true,
+          tag: "Field",
+        };
+        responseItem.properties.push(fieldItem);
+        fields.push(fieldItem);
+      }
+      responses.push(responseItem);
+
+    //Retrieve the parameters
+    for (const parameter of requestedParameters) {
+      const parameterName = parameter.name;
+      const parameterLabel = resource + ":get." + parameterName;
+      const parameterItem: FieldItem = {
+        name: parameterName,
+        label: parameterLabel,
+        type: parameter.schema.type || 'object',
+        responseIndex: resources.length,
+        index: parameters.length,
+        required: parameter.required,
+        canBeAdded: true,
+        tag: "Parameter",
+      };
+      parameters.push(parameterItem);
     }
-    catch(err){
-      console.error("Error analyzing OpenAPI: ", err);
-    }
+
+    //Create the resource
+    const resourceItem: ResourceItem = {
+      name: resource,
+      label: resource,
+      outputResponse: responseItem,
+      parameters: parameters,
+      index: resources.length,
+      canBeAdded: true,
+      tag: "Resource",
+    };
+    resources.push(resourceItem);
   }
+
+  }
+
+  setResourceInputs(resources);
+  setResourceResponseInputs(responses);
+  setResourceParametersInputs(parameters);
+  setResourceFieldInputs(fields);
+
+  console.log("Final resources: ", resources);
+  console.log("Final responses: ", responses);
+  console.log("Final parameters: ", parameters);
+  console.log("Final fields: ", fields);
+}
 
   return (
     <Flex mt={1} gap={1} flexWrap="wrap">

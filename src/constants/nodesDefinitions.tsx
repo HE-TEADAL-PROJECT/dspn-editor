@@ -17,9 +17,13 @@ export const nodeBorderRadius = 15;
 export const fontSize = 16;
 
 // Nodes colors
-export const inputColor = "#08A5087F";
-export const policyColor = "#FFFF007F";
-export const outputColor = "#FF00007F";
+export const inputColor = "#a8e481";
+//export const inputColor = "#08A5087F";
+export const policyColor = "#F3E75A";
+//export const policyColor = "#FFFF007F";
+export const outputColor = "#f35246";
+//export const outputColor = "#FF00007F";
+export const defaultColor = "#FFA822";
 
 // Connection between nodes
 export const baseEdgeStyle = { fill: 'none', stroke: 'black', strokeWidth: 1 };
