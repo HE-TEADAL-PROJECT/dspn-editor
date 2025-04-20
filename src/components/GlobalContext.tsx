@@ -17,6 +17,10 @@ interface GlobalContextType  {
   setResourceFieldInputs: React.Dispatch<React.SetStateAction<FieldItem[]>>;
   isMenuOpen: boolean;
   setIsMenuOpen: (isMenuOpen: boolean) => void;
+  policyNodesCount: number;
+  setPolicyNodesCount: React.Dispatch<React.SetStateAction<number>>;
+  outpuNodesCount: number;
+  setOutputNodesCount: React.Dispatch<React.SetStateAction<number>>;
 }
 
 // Create a default value for the context
@@ -35,6 +39,10 @@ const defaultValue: GlobalContextType = {
   setResourceFieldInputs: () => {},
   isMenuOpen: false,
   setIsMenuOpen: () => {},
+  policyNodesCount: 0,
+  setPolicyNodesCount: () => {},
+  outpuNodesCount: 0,
+  setOutputNodesCount: () => {},
 };
 
 export const GlobalContext = createContext<GlobalContextType>(defaultValue);

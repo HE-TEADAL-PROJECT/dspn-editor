@@ -3,9 +3,10 @@
 
 //Class names used to add stroke to the icons
 
-import { faArrowRight, faLayerGroup, faPencil, faQuestion, faScissors, faShieldHalved, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faFilter, faLayerGroup, faPencil, faQuestion, faScissors, faShieldHalved, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { defaultColor, inputColor, policyColor } from "./nodesDefinitions";
+import { NodeType, InputNodeType, OutputNodeType, PolicyNodeType, DefaultNodeType } from "../types/nodeTypes";
 
 export function ResourceInputIcon(){
   return (
@@ -65,6 +66,11 @@ export function ProjectionPolicyIcon(){
   );
 }
 
+export function FilterPolicyIcon(){
+  return(
+    <FontAwesomeIcon icon={faFilter} style={{color: policyColor}} className="my-icon"/>
+  );
+}
 
 export function ResourceOutputIcon(){
   return (
@@ -104,4 +110,87 @@ export function DefaultUserIcon(){
   return(
     <FontAwesomeIcon icon={faUser} style={{color: defaultColor}} className="my-icon"/>
   );
+}
+
+export function getIcon(type: NodeType, subType: InputNodeType | PolicyNodeType | OutputNodeType | DefaultNodeType) {
+  let icon = null;
+
+  switch (type) {
+    case NodeType.Input:
+      switch (subType) {
+        case InputNodeType.Resource:
+          icon = ResourceInputIcon();
+          break;
+        case InputNodeType.Response:
+          icon = ResourceResponseInputIcon();
+          break;
+        case InputNodeType.Parameter:
+          icon = ResourceParameterInputIcon();
+          break;
+        case InputNodeType.Field:
+          icon = ResourceFieldInputIcon();
+          break;
+        default:
+          console.error("Unknown Input node subtype:", subType);
+          break;
+      }
+      break;
+      
+    case NodeType.Policy:
+      switch (subType) {
+        case PolicyNodeType.Rename:
+          icon = RenamePolicyIcon();
+          break;
+        case PolicyNodeType.Encryption:
+          icon = EncryptionPolicyIcon();
+          break;
+        case PolicyNodeType.Projection:
+          icon = ProjectionPolicyIcon();
+          break;
+        case PolicyNodeType.Filter:
+          icon = FilterPolicyIcon();
+          break;
+        default:
+          console.error("Unknown Policy node subtype:", subType);
+          break;
+      }
+      break;
+      
+    case NodeType.Output:
+      switch (subType) {
+        case OutputNodeType.Response:
+          icon = ResourceResponseOutputIcon();
+          break;
+        case OutputNodeType.Resource:
+          icon = ResourceOutputIcon();
+          break;
+        default:
+          console.error("Unknown Output node subtype:", subType);
+          break;
+      }
+      break;
+      
+    case NodeType.Default:
+      switch (subType) {
+        case DefaultNodeType.Request:
+          icon = DefaultRequestIcon();
+          break;
+        case DefaultNodeType.Platform:
+          icon = DefaultPlatformIcon();
+          break;
+        case DefaultNodeType.User:
+          icon = DefaultUserIcon();
+          break;
+        default:
+          console.error("Unknown Default node subtype:", subType);
+          break;
+      }
+      break;
+      
+    default:
+      console.error("Unknown node type:", type);
+      break;
+  }
+  
+  return icon;
 }

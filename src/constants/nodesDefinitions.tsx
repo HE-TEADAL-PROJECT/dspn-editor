@@ -28,8 +28,63 @@ export const defaultColor = "#FFA822";
 // Connection between nodes
 export const baseEdgeStyle = { fill: 'none', stroke: 'black', strokeWidth: 1 };
 export const baseMarkerEnd = {
-  type: MarkerType.ArrowClosed,
+  type: MarkerType.Arrow,
   width: 20,
   height: 20,
   color: 'black',
 };
+
+export const baseMarkerStart = {
+  type: MarkerType.ArrowClosed,
+  orient: 'auto-start-reverse', // This is often missing
+  width: 20,
+  height: 20,
+  color: 'black',
+};
+
+export const diamondMarkerDef = () => {
+   return (
+    <defs>
+      <marker
+        id="diamond"
+        viewBox="-6 -6 12 12"
+        refX="-2"
+        refY="0"
+        markerWidth="15"
+        markerHeight="15"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path 
+          d="M0,-5L5,0L0,5L-5,0Z" 
+          fill="black" 
+          stroke="none"
+        />
+      </marker>
+    </defs>
+   );
+}
+
+export const emptyArrowMarkerDef = () => {
+  return (
+    <defs>
+      <marker
+        id="empty-arrow"
+        viewBox="0 -5 10 10"
+        refX="8"
+        refY="0"
+        markerWidth="10"
+        markerHeight="10"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path 
+          d="M0,-4L8,0L0,4z"
+          fill="white" 
+          stroke="black"
+          strokeWidth="1.5"
+        />
+      </marker>
+    </defs>
+  );
+}

@@ -1,6 +1,6 @@
 import { Flex, Box, IconButton } from "@chakra-ui/react";
 import { DEFAULT_COMPONENTS, INPUT_COMPONENTS, OUTPUT_COMPONENTS, POLICY_COMPONENTS } from "../constants/components";
-import { NodeType, NodeData } from "../types/nodeTypes";
+import { NodeType, NodeData, PolicyNodeValue } from "../types/nodeTypes";
 interface PanelSingleComponentsProps {
   componentType: NodeType;
   onDragFunc: (event: React.DragEvent<HTMLDivElement> | React.DragEvent<HTMLButtonElement>, node: NodeData) => void;
@@ -25,13 +25,19 @@ export default function PanelSingleComponents({ componentType, onDragFunc }: Pan
 
   const outputList: NodeData[] = [];
   components.forEach((item) => {
-      outputList.push({
-        label: item.label,
-        type: componentType,
-        subType: item.type,
-        parentOf: [],
-      });
+    let value;
+    if(componentType === NodeType.Policy) {
+      value = {policy: ''} as PolicyNodeValue;
+    }
+
+    outputList.push({
+      label: item.label,
+      type: componentType,
+      subType: item.type,
+      value: value,
+      parentOf: [],
     });
+  });
 
   return (
     <Flex mt={1} gap={1} flexWrap="wrap">

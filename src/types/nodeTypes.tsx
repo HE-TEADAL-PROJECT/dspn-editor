@@ -1,12 +1,12 @@
-import { FieldItem, ResourceItem, ResponseItem } from "./componentTypes";
+import { DefaultItem, FieldItem, ResourceItem, ResponseItem } from "./componentTypes";
 
 export type NodeData = {
   label: string;
   type: NodeType;
   subType: InputNodeType | PolicyNodeType | OutputNodeType | DefaultNodeType;
   value?: InputNodeValue | PolicyNodeValue | OutputNodeValue;
-  input?: ResourceItem | ResponseItem | FieldItem;
-  output?: ResourceItem | ResponseItem | FieldItem;
+  input?: ResourceItem | ResponseItem | FieldItem | DefaultItem;
+  output?: ResourceItem | ResponseItem | FieldItem | DefaultItem;
   parentOf: string[];
 }
 
@@ -21,6 +21,7 @@ export enum PolicyNodeType {
   Rename = 'Rename',
   Encryption = 'Encryption',
   Projection = 'Projection',
+  Filter = 'Filter',
 }
 
 export enum OutputNodeType {

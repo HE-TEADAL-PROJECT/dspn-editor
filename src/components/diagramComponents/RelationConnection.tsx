@@ -1,5 +1,5 @@
 import { BaseEdge, EdgeProps, getSmoothStepPath } from "@xyflow/react";
-import { baseEdgeStyle } from "../../constants/nodesDefinitions";
+import { baseEdgeStyle, diamondMarkerDef, emptyArrowMarkerDef } from "../../constants/nodesDefinitions";
 
 export default function RelationConnection({
   sourceX,
@@ -9,6 +9,7 @@ export default function RelationConnection({
   sourcePosition,
   targetPosition,
   markerEnd,
+  markerStart,
 }: EdgeProps) {
   const [d] = getSmoothStepPath({
     sourceX,
@@ -19,8 +20,16 @@ export default function RelationConnection({
     targetPosition,
   });
 
-  return <BaseEdge path={d}
-    markerEnd={markerEnd}
-    style={baseEdgeStyle}
-  />;
+  return (
+    <>
+      {diamondMarkerDef()}
+      {emptyArrowMarkerDef()}
+
+      <BaseEdge path={d}
+        markerStart={markerStart}
+        markerEnd={markerEnd}
+        style={baseEdgeStyle}
+      />
+    </>
+  );
 }

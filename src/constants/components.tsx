@@ -1,5 +1,5 @@
 import { DefaultNodeType, InputNodeType, OutputNodeType, PolicyNodeType } from "../types/nodeTypes";
-import { DefaultPlatformIcon, DefaultRequestIcon, DefaultUserIcon, EncryptionPolicyIcon, ProjectionPolicyIcon, RenamePolicyIcon, ResourceFieldInputIcon, ResourceInputIcon, ResourceOutputIcon, ResourceParameterInputIcon, ResourceResponseInputIcon, ResourceResponseOutputIcon } from "./icons";
+import { DefaultPlatformIcon, DefaultRequestIcon, DefaultUserIcon, EncryptionPolicyIcon, FilterPolicyIcon, ProjectionPolicyIcon, RenamePolicyIcon, ResourceFieldInputIcon, ResourceInputIcon, ResourceOutputIcon, ResourceParameterInputIcon, ResourceResponseInputIcon, ResourceResponseOutputIcon } from "./icons";
 
 export const INPUT_COMPONENTS = [
   {
@@ -46,6 +46,12 @@ export const POLICY_COMPONENTS = [
     label: "Projection",
     available: true,
   },
+  {
+    icon: FilterPolicyIcon(),
+    type: PolicyNodeType.Filter,
+    label: "Filter",
+    available: true,
+  },
 ]
 
 export const OUTPUT_COMPONENTS = [
@@ -67,7 +73,7 @@ export const DEFAULT_COMPONENTS = [
   {
     icon: DefaultRequestIcon(),
     type: DefaultNodeType.Request,
-    label: "Request",
+    label: "HTTP Request",
     available: true,
   },
   {

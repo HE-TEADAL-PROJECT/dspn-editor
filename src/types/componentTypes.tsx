@@ -30,3 +30,12 @@ export type ResourceItem = {
   parameters? : FieldItem[];
   canBeAdded : boolean;
 }
+
+export type DefaultItem = {
+  tag: "Default";
+  name : string;
+  label : string;
+  type : string;
+  index : number;
+  canBeAdded : boolean;
+}

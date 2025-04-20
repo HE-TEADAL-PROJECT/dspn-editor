@@ -13,13 +13,14 @@ import {
   Node,
   OnReconnect,
   OnNodeDrag,
+  useKeyPress,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useContext, useRef, useState } from 'react';
 import { InputComponent, OutputComponent, PolicyComponent, DefaultComponent } from './diagramComponents/NodeComponent';
 import { InputNodeType, NodeData, NodeType, PolicyNodeType } from '../types/nodeTypes';
 import RelationConnection from './diagramComponents/RelationConnection';
-import { baseMarkerEnd } from '../constants/nodesDefinitions';
+import { baseMarkerEnd, } from '../constants/nodesDefinitions';
 import ConnectionLine from './diagramComponents/ConnectionLine';
 import { GlobalContext } from './GlobalContext';
 import { FieldItem, ResourceItem, ResponseItem } from '../types/componentTypes';
@@ -42,8 +43,6 @@ const initialNodes: Node[] = [];
 
 const initialEdges: Edge[] = [];
 
-let outpuNodesCount = 0;
-let policyNodesCount = 0;
 
 const Workflow = () => {
   const [nodes, setNodes, onNodesChannge] = useNodesState(initialNodes);
@@ -61,32 +60,47 @@ const Workflow = () => {
     const connectionName = `${connection.source}-${connection.target}`;
     if(edges.find((edge) => edge.id === connectionName)) return; // Already connected
 
+    const targetNode = nodes.find((node) => node.id === connection.target);
+    const sourceNode = nodes.find((node) => node.id === connection.source);
+    if(!targetNode || !sourceNode) return; // No nodes found
+
+    const sourceNodeData = sourceNode.data as NodeData;
+    const targetNodeData = targetNode.data as NodeData;
+    if(!sourceNodeData || !targetNodeData) return; // No data found
+
+    let markerStart, markerEnd;
+    markerStart = '';
+    markerEnd = baseMarkerEnd;
+
+    // InputNode - InputNode: Realization
+    if(sourceNodeData.type === NodeType.Input && targetNodeData.type === NodeType.Input) {
+      markerStart = 'diamond';
+    }
+
+    //Realization
+    if(sourceNodeData.type === NodeType.Input && targetNodeData.type === NodeType.Output) {
+      markerEnd = 'empty-arrow';
+      //TODO: change connection line
+    }
+
     const edge: Edge = {
       ...connection,
       type: 'relationConnection',
       id: connectionName,
-      markerEnd: baseMarkerEnd,
+      markerStart: markerStart,
+      markerEnd: markerEnd,
     };
     setEdges((eds) => eds.concat(edge));
 
-    const targetNode = nodes.find((node) => node.id === connection.target);
-    const sourceNode = nodes.find((node) => node.id === connection.source);
-
-    if(targetNode && sourceNode){
-      
-    const sourceNodeData = sourceNode.data as NodeData;
-    const targetNodeData = targetNode.data as NodeData;
-    if(!sourceNodeData || !targetNodeData) return;
-
-      switch(targetNode?.type) {
-        case 'policyComponent':
-          onConnectedPolicy(sourceNodeData, targetNodeData);
-          break;
-        case 'outputComponent':
-          onConnectedOutput(sourceNodeData, targetNodeData);
-          break;
-      }
+    switch(targetNode?.type) {
+      case 'policyComponent':
+        onConnectedPolicy(sourceNodeData, targetNodeData);
+        break;
+      case 'outputComponent':
+        onConnectedOutput(sourceNodeData, targetNodeData);
+        break;
     }
+    
   }, [edges, setEdges, nodes]);
 
   const removeEdge = (edge: Edge) => {
@@ -127,9 +141,11 @@ const Workflow = () => {
   }
 
   const onConnectedPolicy = (sourceNode: NodeData, targetNode: NodeData) => {
-    //Update input and output:
-    targetNode.input = JSON.parse(JSON.stringify(sourceNode.output));
-    targetNode.output = JSON.parse(JSON.stringify(sourceNode.output));
+    if(sourceNode.output !== undefined) {
+      //Update input and output:
+      targetNode.input = JSON.parse(JSON.stringify(sourceNode.output));
+      targetNode.output = JSON.parse(JSON.stringify(sourceNode.output));
+    }
   }
 
   const onConnectedOutput = (sourceNode: NodeData, targetNode: NodeData) => {
@@ -138,8 +154,11 @@ const Workflow = () => {
       targetNode.label = sourceNode.label;
     }
 
-    // Update output:
-    targetNode.output = JSON.parse(JSON.stringify(sourceNode.output));
+    if(sourceNode.output !== undefined) {
+      //Update input and output:
+      targetNode.input = JSON.parse(JSON.stringify(sourceNode.output));
+      targetNode.output = JSON.parse(JSON.stringify(sourceNode.output));
+    }
   }
 
   const onDisconnectedPolicy = (node: Node) => {
@@ -152,8 +171,9 @@ const Workflow = () => {
     // Change to default name:
     node.data.label = node.data.subType as string;
 
-    // Reset output:
+    // Reset input and output:
     (node.data as NodeData).output = undefined;
+    (node.data as NodeData).input = undefined;
   }
 
 
@@ -214,6 +234,11 @@ const Workflow = () => {
   const isPolicyConnectionValid = (sourceNode: NodeData, targetNode: NodeData) => {
     const policyType = targetNode.subType as PolicyNodeType;
 
+    // DefaultNode - PolicyNode
+    if(sourceNode.type === NodeType.Default) {
+      return true;
+    }
+
     // InputNode | PolicyNode - PolicyNode: only if the previous output is not undefined
     if(policyType === PolicyNodeType.Rename) {
       return sourceNode.output !== undefined;
@@ -228,6 +253,9 @@ const Workflow = () => {
   }
 
   const isOutputConnectionValid = (sourceNode: NodeData, targetNode: NodeData ) => {
+    //Already connected
+    if(targetNode.input !== undefined) return false;
+    
     // Same type of Item
     if(sourceNode.output?.tag === targetNode.subType) return true;
 
@@ -285,6 +313,8 @@ const Workflow = () => {
 
   // ADD AND REMOVE NODES
 
+  const {policyNodesCount, setPolicyNodesCount, outpuNodesCount, setOutputNodesCount} = useContext(GlobalContext);
+
   const addInputNode = (node: NodeData, position: XYPosition) => {
     const newNode = {
       id: node.output?.index.toString() + '.' + node.type + '.' + node.subType,
@@ -340,7 +370,7 @@ const Workflow = () => {
       data: node,
     };
     setNodes((nds) => nds.concat(newNode));
-    policyNodesCount++;
+    setPolicyNodesCount(policyNodesCount + 1);
   }
 
   function addOutputNode (node: NodeData, position: XYPosition)  {
@@ -351,9 +381,8 @@ const Workflow = () => {
       data: node,
     };
     setNodes((nds) => nds.concat(newNode));
-    outpuNodesCount++;
+    setOutputNodesCount(outpuNodesCount + 1);
   }
-
 
   function addDefaultNode (node: NodeData, position: XYPosition)  {
     const newNode = {
@@ -549,6 +578,19 @@ const Workflow = () => {
       if(!sourceNode.data.parentOf) sourceNode.data.parentOf = [targetNode.id];
       else if(sourceNode.data.parentOf && !(sourceNode.data as NodeData).parentOf.includes(targetNode.id)) sourceNode.data.parentOf = [...(sourceNode.data as NodeData).parentOf, targetNode.id];
     }
+  }
+
+  const deletePressed = useKeyPress('Delete');
+  const {deleteElements, } = useReactFlow();
+
+  if(deletePressed) {
+    const nodesToDelete = [];
+    for(const node of nodes) {
+      if(node.selected) {
+        nodesToDelete.push(node);
+      }
+    }
+    deleteElements({nodes: nodesToDelete});
   }
 
   return (

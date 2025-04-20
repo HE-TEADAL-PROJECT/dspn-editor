@@ -1,5 +1,5 @@
 import { Flex, IconButton } from "@chakra-ui/react";
-import { faFileImport, faFileUpload, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { faFileImport, faFileUpload, faFileArrowDown, faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { bottomButtonHoverColor, bottomButtonColor } from "../constants/default";
 import { useState, useContext, useEffect } from "react";
@@ -7,22 +7,125 @@ import { GlobalContext } from "./GlobalContext";
 import useParse from "./UseParse";
 import { OpenAPI, Parameter,} from "../types/OpenAPI";
 import { FieldItem, ResourceItem, ResponseItem } from "../types/componentTypes";
+import { Node, useReactFlow } from '@xyflow/react';
+import { DEFAULT_COMPONENTS } from "../constants/components";
+import { NodeData } from "../types/nodeTypes";
+
+let fileTitle = "model";
 
 export default function PanelActions() {
+  // Add useReactFlow hook to access nodes and edges
+  const { getNodes, getEdges, setNodes, setEdges } = useReactFlow();
+  
   const [fileContent, setFileContent] = useState<string | null>(null);
   const {parsedFile: openAPI, isLoaded: isOpenAPILoaded} = useParse(fileContent);
   const { setOpenAPI } = useContext(GlobalContext);
 
   const { setResourceInputs, setResourceResponseInputs, setResourceParametersInputs, setResourceFieldInputs } = useContext(GlobalContext);
+  const { resourceInputs, resourceResponseInputs, resourceParametersInputs, resourceFieldInputs } = useContext(GlobalContext);
   
+  const { setPolicyNodesCount, setOutputNodesCount } = useContext(GlobalContext);
+  
+  // IMPORT STATE FUNCTION
   function importModel() {
-    console.log("Import Model");
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            try {
+              const state = JSON.parse(e.target.result as string);
+              
+              // Restore nodes and edges
+              setNodes(state.nodes || []);
+              setEdges(state.edges || []);
+              
+              // Set counters that track IDs
+              if (state.nodes && state.nodes.length > 0) {
+                let policyCount = 0;
+                let outputCount = 0;
+                state.nodes.forEach((node: Node) => {
+                  if (node.type === 'policyComponent') {
+                    policyCount++;
+                  } else if (node.type === 'outputComponent') {
+                    outputCount++;
+                  }
+                });
+                console.log("Policy nodes count: ", policyCount);
+                console.log("Output nodes count: ", outputCount);
+                setPolicyNodesCount(policyCount);
+                setOutputNodesCount(outputCount);
+              }
+
+              //Set Default components usage
+              if (state.nodes && state.nodes.length > 0) {
+                state.nodes.forEach((node: Node) => {
+                  if (node.type === 'defaultComponent') {
+                    DEFAULT_COMPONENTS.forEach((component) => {
+                      if(component.type === (node.data as NodeData).subType) {
+                        component.available = false;
+                      }
+                    });
+                  } 
+                });
+              }
+
+              setResourceInputs(state.resourceInputs || []);
+              setResourceResponseInputs(state.resourceResponseInputs || []);
+              setResourceParametersInputs(state.resourceParametersInputs || []);
+              setResourceFieldInputs(state.resourceFieldInputs || []);
+              
+              console.log("Model imported successfully");
+            } catch (error) {
+              console.error("Error importing model:", error);
+            }
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  }
+  
+  // EXPORT STATE FUNCTION AND DOWNLOAD FILE
+  function downloadModel() {
+    // Get current nodes and edges
+    const nodes = getNodes();
+    const edges = getEdges();
+    
+    // Create a state object, including any objects needed to be saved
+    const appState = {
+      fileTitle,
+      nodes,
+      edges,
+      resourceInputs,
+      resourceResponseInputs,
+      resourceParametersInputs,
+      resourceFieldInputs,
+    };
+    
+    // Convert to JSON
+    const jsonString = JSON.stringify(appState, null, 2);
+    
+    // Create and trigger download
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'visualizer-model.json';
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    console.log("Model exported");
   }
 
-  function exportModel() {
-    console.log("Export Model");
+  function exportOpenAPI() {
+    console.log("Export Open API");
   }
-
 
   //Update the global context with the parsed OpenAPI data
   useEffect(() => {
@@ -54,6 +157,7 @@ export default function PanelActions() {
           }
         };
         reader.readAsText(file);
+        fileTitle = file.name;
       }
     };
     input.click();
@@ -66,6 +170,11 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
   const fields: FieldItem[] = [];
   const parameters: FieldItem[] = [];
 
+  if(!openAPI.paths){
+    console.error("No paths found in OpenAPI object");
+    //TODO: add a notification to the user
+    return;
+  }
 
   // Retrieve the response names that are produced by the GET methods
   const paths = Object.keys(openAPI.paths) ?? [];
@@ -212,12 +321,22 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
 
       <IconButton
         size="lg"
-        title="Export Model"
-        onClick={exportModel}
+        title="Download Model"
+        onClick={downloadModel}
         bg="transparent"
         _hover={{ bg: bottomButtonHoverColor }}
       >
         <FontAwesomeIcon icon={faFileArrowDown} color={bottomButtonColor}/>
+      </IconButton>
+
+      <IconButton
+        size="lg"
+        title="Export OpenAPI"
+        onClick={exportOpenAPI}
+        bg="transparent"
+        _hover={{ bg: bottomButtonHoverColor }}
+      >
+        <FontAwesomeIcon icon={faFileExport} color={bottomButtonColor}/>
       </IconButton>
     </Flex>
   );

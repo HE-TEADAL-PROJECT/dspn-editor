@@ -102,7 +102,6 @@ function getInputEntries(list: ResourceItem[] | ResponseItem[] | FieldItem[], in
       label: item.label,
       type: NodeType.Input,
       subType: inputSubType,
-      value: { input: item },
       output: item,
       parentOf: [],
     });

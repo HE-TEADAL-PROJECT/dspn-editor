@@ -4,9 +4,13 @@ import { fontSize, minNodeHeight, minNodeWidth } from "../../constants/nodesDefi
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useState } from "react";
+import { DefaultNodeType, InputNodeType, NodeType, OutputNodeType, PolicyNodeType } from "../../types/nodeTypes";
+import { getIcon } from "../../constants/icons";
 
 interface BaseComponentProps {
   label: string;
+  type: NodeType;
+  subType: InputNodeType | PolicyNodeType | OutputNodeType | DefaultNodeType;
   selected: boolean;
   color?: string;
   id?: string;
@@ -15,6 +19,8 @@ interface BaseComponentProps {
 
 export default function BaseComponent({ 
   label, 
+  type,
+  subType,
   color = "#FFFFFF7F",
   selected,
   id,
@@ -47,6 +53,9 @@ export default function BaseComponent({
   }
 }, [parentOf, getNode, svgWidth]);
 
+  const icon = getIcon(type, subType);
+
+
   return (
     <Box
     border={`2px solid ${"black"}`}
@@ -60,6 +69,16 @@ export default function BaseComponent({
     justifyContent="center" // Center items horizontally
   >
     <Text fontSize={fontSize}>{label}</Text>
+
+    {icon && (
+        <Box
+          position="absolute"
+          top="3px"
+          right="3px"
+        >
+          {icon}
+        </Box>
+      )}
 
       { selected && id && (
         <IconButton
