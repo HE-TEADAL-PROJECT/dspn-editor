@@ -23,7 +23,7 @@ import RelationConnection from './diagramComponents/RelationConnection';
 import { baseMarkerEnd, } from '../constants/nodesDefinitions';
 import ConnectionLine from './diagramComponents/ConnectionLine';
 import { GlobalContext } from './GlobalContext';
-import { FieldItem, ResourceItem, ResponseItem } from '../types/componentTypes';
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from '../types/componentTypes';
 import LeftPanel from './LeftPanel';
 import { DEFAULT_COMPONENTS } from '../constants/components';
 import RightPanel from './RightPanel';
@@ -150,8 +150,8 @@ const Workflow = () => {
 
   const onConnectedOutput = (sourceNode: NodeData, targetNode: NodeData) => {
     // If still default name, change it to target's
-    if(targetNode.label === targetNode.subType) {
-      targetNode.label = sourceNode.label;
+    if(targetNode.label === targetNode.subType && sourceNode.output?.value) {
+      targetNode.label = sourceNode.output.value.name;
     }
 
     if(sourceNode.output !== undefined) {
@@ -341,7 +341,7 @@ const Workflow = () => {
         );
         break;
       case InputNodeType.Parameter:
-        setResourceParametersInputs((prev: FieldItem[]) =>
+        setResourceParametersInputs((prev: ParameterItem[]) =>
           prev.map((res) =>
           res.index === node.output?.index ? { ...res, canBeAdded: false } : res
           )

@@ -5,13 +5,12 @@ import { bottomButtonHoverColor, bottomButtonColor } from "../constants/default"
 import { useState, useContext, useEffect } from "react";
 import { GlobalContext } from "./GlobalContext";
 import useParse from "./UseParse";
-import { OpenAPI, Parameter,} from "../types/OpenAPI";
-import { FieldItem, ResourceItem, ResponseItem } from "../types/componentTypes";
+import { OpenAPI, Parameter, PathItem, Schema,} from "../types/OpenAPI";
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from "../types/componentTypes";
 import { Node, useReactFlow } from '@xyflow/react';
 import { DEFAULT_COMPONENTS } from "../constants/components";
-import { NodeData } from "../types/nodeTypes";
+import { NodeData, OutputNodeType } from "../types/nodeTypes";
 
-let fileTitle = "model";
 
 export default function PanelActions() {
   // Add useReactFlow hook to access nodes and edges
@@ -25,6 +24,7 @@ export default function PanelActions() {
   const { resourceInputs, resourceResponseInputs, resourceParametersInputs, resourceFieldInputs } = useContext(GlobalContext);
   
   const { setPolicyNodesCount, setOutputNodesCount } = useContext(GlobalContext);
+  const [fileTitle, setFileTitle] = useState<string>("model");
   
   // IMPORT STATE FUNCTION
   function importModel() {
@@ -124,7 +124,63 @@ export default function PanelActions() {
   }
 
   function exportOpenAPI() {
-    console.log("Export Open API");
+    // 1. Deep clone the OpenAPI object to avoid modifying the original
+    const finalOpenAPI: OpenAPI = JSON.parse(JSON.stringify(openAPI));
+
+    // 2. Clean up the OpenAPI object
+
+    // 3. Search for output nodes and change the modified parts, in the order: Path, Parameter, Response, Field
+    const nodes = getNodes();
+    const outputNodes = nodes.filter((node) => node.type === 'outputComponent' && node.data?.output);
+
+    // Cycle through the Path output nodes 
+    for (const node of outputNodes) {
+      const resourceNode = node.data as NodeData;
+      if(!resourceNode.output) continue; // Skip if no output
+
+      if(resourceNode.subType === OutputNodeType.Resource){
+        // Delete the path entry with the original path name and replace it with the new one
+        delete finalOpenAPI.paths[resourceNode.output.original];
+        const pathName = resourceNode.output.value.name;
+        finalOpenAPI.paths[pathName] = resourceNode.output.value.value as PathItem;
+
+        // Cycle through the Response output nodes
+        for (const node of outputNodes) {
+          const responseNode = node.data as NodeData;
+          if(!responseNode.output) continue; // Skip if no output
+
+          if(responseNode.subType === OutputNodeType.Response){
+            const oldPathName = responseNode.output.original.split(':')[0];
+
+            // If it's part of this path, change the response
+            if(oldPathName === pathName){
+              // Change the schema in the response [TODO] create a new schema and change the ref?
+              finalOpenAPI.paths[pathName]['get'].responses['200'].content!['application/json'].schema = responseNode.output.value.value as Schema;
+            }
+
+            //[TODO] Cycle through the Field output nodes of this path
+          }
+          else if(responseNode.subType === OutputNodeType.Parameter){
+            //[TODO]
+          }
+        }
+      }
+    }
+
+
+    // Convert to JSON
+    const jsonString = JSON.stringify(finalOpenAPI, null, 2);
+    
+    // Create and trigger download
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileTitle + '.json';
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    console.log("OpenAPI exported");
   }
 
   //Update the global context with the parsed OpenAPI data
@@ -157,7 +213,8 @@ export default function PanelActions() {
           }
         };
         reader.readAsText(file);
-        fileTitle = file.name;
+        const name = (file.name.split(".json")[0]).split(".yaml")[0].split(".yml")[0];
+        setFileTitle(name);
       }
     };
     input.click();
@@ -168,7 +225,7 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
   const resources: ResourceItem[] = [];
   const responses: ResponseItem[] = [];
   const fields: FieldItem[] = [];
-  const parameters: FieldItem[] = [];
+  const parameters: ParameterItem[] = [];
 
   if(!openAPI.paths){
     console.error("No paths found in OpenAPI object");
@@ -185,6 +242,7 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
     
     const producedResponse = [];
     let requestedParameters: Parameter[] = [];
+    const schemas: {[schemaName: string]: Schema} = {};
 
     for(const method in methods) {
       if(methods[method].toLowerCase() == 'get'){
@@ -194,15 +252,30 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
           requestedParameters = openAPI.paths[paths[path]][methods[method]].parameters || [];
           producedResponse.push(responseName);
         }
+        // If the response is not a reference, create a new schema
+        else{
+          console.log("No schema ref found for GET method in path: ", resource);
+          const schema: Schema = openAPI.paths[paths[path]][methods[method]].responses['200'].content!['application/json'].schema;
+          //[TODO]: take the whole name of just the last part?
+          const name = resource.split('/')[resource.split('/').length - 1];
+          schemas[name] = schema;
+          requestedParameters = openAPI.paths[paths[path]][methods[method]].parameters || [];
+          producedResponse.push(name);
+        }
       }
     }
 
+    //Schemas are the union of all the schemas in the opnAPI and the ones created in the previous step
+    for(const schemaName in openAPI.components!.schemas){
+      schemas[schemaName] = openAPI.components!.schemas[schemaName];
+    }
+
     //Retrieve responses and fields
-    for (const responseName in openAPI.components!.schemas) {
+    for (const responseName in schemas) {
       // Check if the response is produced by a GET method, if not, skip
       if(!producedResponse.includes(responseName)) continue;
       
-      const response = openAPI.components!.schemas[responseName];
+      const response = schemas[responseName];
       const responseLabel = resource + ":get." + responseName;
       const responseItem: ResponseItem = {
         name: responseName,
@@ -212,11 +285,15 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
         index: responses.length,
         canBeAdded: true,
         tag: "Response",
+        value: {name:responseName, value: response},
+        original: responseLabel,
       };
   
+      
       let properties = response.properties;
       let prefix = '';
       //If the response is an array, create a field for the items TODO: Check if the items are objects or arrays
+
       if(response.type == 'array'){
         properties = response.items!.properties;
         
@@ -224,6 +301,8 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
         const subResponseName = subRef!.split('/')[subRef!.split('/').length - 1];
         prefix = '.' + subResponseName;
 
+        //[TODO] ADD again items field to the responseItem
+      /*
         const fieldItems: FieldItem = {
           name: 'items',
           label: responseLabel + ".items",
@@ -234,20 +313,23 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
           tag: "Field",
         };
         responseItem.properties.push(fieldItems);
-        fields.push(fieldItems);
+        fields.push(fieldItems);*/
       }
 
       for (const propertyName in properties) {
         const property = properties[propertyName];
+        const propertyLabel = responseLabel + prefix + "." + propertyName;
         const fieldItem: FieldItem = {
           name: propertyName,
-          label: responseLabel + prefix + "." + propertyName,
+          label: propertyLabel,
           type: property.type || 'object',
           responseIndex: responses.length,
           index: fields.length,
           required: response.required?.includes(propertyName),
           canBeAdded: true,
           tag: "Field",
+          value: {name: propertyName, value: property},
+          original: propertyLabel,
         };
         responseItem.properties.push(fieldItem);
         fields.push(fieldItem);
@@ -258,7 +340,7 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
     for (const parameter of requestedParameters) {
       const parameterName = parameter.name;
       const parameterLabel = resource + ":get." + parameterName;
-      const parameterItem: FieldItem = {
+      const parameterItem: ParameterItem = {
         name: parameterName,
         label: parameterLabel,
         type: parameter.schema.type || 'object',
@@ -267,6 +349,8 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
         required: parameter.required,
         canBeAdded: true,
         tag: "Parameter",
+        value: {name: parameterName, value: parameter},
+        original: parameterLabel,
       };
       parameters.push(parameterItem);
     }
@@ -280,6 +364,8 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
       index: resources.length,
       canBeAdded: true,
       tag: "Resource",
+      value: {name:resource, value: openAPI.paths[resource]},
+      original: resource,
     };
     resources.push(resourceItem);
   }

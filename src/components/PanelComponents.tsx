@@ -153,6 +153,7 @@ export default function PanelComponents({ componentType, onDragFunc }: PanelComp
           _hover={{ bg: "gray.100" }}
           key={component.type}
           m={1}
+          title={component.label}
           >
             <DropdownMenu
               key={component.type}

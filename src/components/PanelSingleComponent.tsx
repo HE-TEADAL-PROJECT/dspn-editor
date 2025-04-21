@@ -34,7 +34,7 @@ export default function PanelSingleComponents({ componentType, onDragFunc }: Pan
       label: item.label,
       type: componentType,
       subType: item.type,
-      value: value,
+      expression: value,
       parentOf: [],
     });
   });

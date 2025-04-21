@@ -1,5 +1,12 @@
+import { Parameter, PathItem, Property, Schema } from "./OpenAPI";
+
+export type ItemValue = {
+  name: string;
+  value: PathItem | Property | Parameter | Schema;
+}
+
 export type FieldItem = {
-  tag: "Field" | "Parameter";
+  tag: "Field";
   name : string;
   label : string;
   type : string;
@@ -8,6 +15,22 @@ export type FieldItem = {
   required? : boolean;
   description? : string;
   canBeAdded : boolean;
+  value: ItemValue;
+  original: string; // Original name of the component
+}
+
+export type ParameterItem = {
+  tag: "Parameter";
+  name : string;
+  label : string;
+  type : string;
+  index : number;
+  responseIndex: number;
+  required? : boolean;
+  description? : string;
+  canBeAdded : boolean;
+  value: ItemValue;
+  original: string; // Original name of the component
 }
 
 export type ResponseItem = {
@@ -18,6 +41,8 @@ export type ResponseItem = {
   index : number;
   resourceIndex : number;
   canBeAdded : boolean;
+  value: ItemValue;
+  original: string; // Original name of the component
 }
 
 export type ResourceItem = {
@@ -27,8 +52,10 @@ export type ResourceItem = {
   outputResponse : ResponseItem;
   index : number;
   description? : string;
-  parameters? : FieldItem[];
+  parameters? : ParameterItem[];
   canBeAdded : boolean;
+  value: ItemValue;
+  original: string; // Original name of the component
 }
 
 export type DefaultItem = {

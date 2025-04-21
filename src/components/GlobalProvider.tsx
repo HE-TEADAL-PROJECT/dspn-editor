@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
 import { GlobalContext } from "./GlobalContext";
 import { OpenAPI } from "../types/OpenAPI";
-import { FieldItem, ResourceItem, ResponseItem } from "../types/componentTypes";
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from "../types/componentTypes";
 
 
 interface GlobalProviderProps {
@@ -13,7 +13,7 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
   const [showAPI, setShowAPI] = useState<boolean>(false);
   const [resourceInputs, setResourceInputs] = useState<ResourceItem[]>([]);
   const [resourceResponseInputs, setResourceResponseInputs] = useState<ResponseItem[]>([]);
-  const [resourceParametersInputs, setResourceParametersInputs] = useState<FieldItem[]>([]);
+  const [resourceParametersInputs, setResourceParametersInputs] = useState<ParameterItem[]>([]);
   const [resourceFieldInputs, setResourceFieldInputs] = useState<FieldItem[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [policyNodesCount, setPolicyNodesCount] = useState<number>(0);

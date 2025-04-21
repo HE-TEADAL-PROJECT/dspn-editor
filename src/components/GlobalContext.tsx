@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 import { OpenAPI } from '../types/OpenAPI';
-import { FieldItem, ResourceItem, ResponseItem } from '../types/componentTypes';
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from '../types/componentTypes';
 
 interface GlobalContextType  {
   openAPI: OpenAPI | undefined;
@@ -11,8 +11,8 @@ interface GlobalContextType  {
   setResourceInputs: React.Dispatch<React.SetStateAction<ResourceItem[]>>;
   resourceResponseInputs: ResponseItem[];
   setResourceResponseInputs: React.Dispatch<React.SetStateAction<ResponseItem[]>>;
-  resourceParametersInputs: FieldItem[];
-  setResourceParametersInputs: React.Dispatch<React.SetStateAction<FieldItem[]>>;
+  resourceParametersInputs: ParameterItem[];
+  setResourceParametersInputs: React.Dispatch<React.SetStateAction<ParameterItem[]>>;
   resourceFieldInputs: FieldItem[];
   setResourceFieldInputs: React.Dispatch<React.SetStateAction<FieldItem[]>>;
   isMenuOpen: boolean;

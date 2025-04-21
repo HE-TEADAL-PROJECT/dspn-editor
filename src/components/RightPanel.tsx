@@ -7,11 +7,11 @@ import { useState, useEffect } from 'react';
 
 // Convert to a proper React component with its own state
 const PolicyValueComponent = ({ node }: { node: NodeData }) => {
-  const [value, setValue] = useState((node.value as PolicyNodeValue)?.policy || '');
+  const [value, setValue] = useState((node.expression as PolicyNodeValue)?.policy || '');
   
   // Update local state when node changes
   useEffect(() => {
-    setValue((node.value as PolicyNodeValue)?.policy || '');
+    setValue((node.expression as PolicyNodeValue)?.policy || '');
   }, [node]);
   
   return (
@@ -26,10 +26,14 @@ const PolicyValueComponent = ({ node }: { node: NodeData }) => {
       _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px blue.500" }}
       onChange={(e) => {
         setValue(e.target.value);
-        if (!node.value) {
-          node.value = { policy: e.target.value };
+        //Set the value in the node expression, if it's the first time, create the expression object
+        if (!node.expression) {
+          node.expression = { policy: e.target.value };
         } else {
-          (node.value as PolicyNodeValue).policy = e.target.value;
+          (node.expression as PolicyNodeValue).policy = e.target.value;
+        }
+        if(node.output) {
+          node.output.value.name = e.target.value; // Clear the output if the expression changes
         }
       }}
     />
@@ -74,6 +78,21 @@ export default function RightPanel({node}: RightPanelProps) {
           {nodeValueComponent}  
         </>}
 
+        {node.output &&
+        <>
+          <Heading size="sm" mt={4} mb={2}> Output:</Heading>
+          <Box 
+            borderRadius="md"
+            overflow="auto"
+          >
+            <JsonView 
+              data={node.output?.value} 
+              shouldExpandNode={(level: number) => level < 1}
+            />
+          </Box>
+        </>}
+        
+        { /* [TODO]: Remove */}
         <Heading size="sm" mt={4} mb={2}> {node.label} Properties:</Heading>
         <Box 
           borderRadius="md"

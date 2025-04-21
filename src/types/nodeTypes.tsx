@@ -1,12 +1,12 @@
-import { DefaultItem, FieldItem, ResourceItem, ResponseItem } from "./componentTypes";
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from "./componentTypes";
 
 export type NodeData = {
   label: string;
   type: NodeType;
   subType: InputNodeType | PolicyNodeType | OutputNodeType | DefaultNodeType;
-  value?: InputNodeValue | PolicyNodeValue | OutputNodeValue;
-  input?: ResourceItem | ResponseItem | FieldItem | DefaultItem;
-  output?: ResourceItem | ResponseItem | FieldItem | DefaultItem;
+  expression?: PolicyNodeValue;
+  input?: ResourceItem | ResponseItem | ParameterItem | FieldItem; //[TODO] | DefaultItem;
+  output?: ResourceItem | ResponseItem | ParameterItem | FieldItem; // PathItem | Schema | Parameter | Property. [TODO] DefaultItem
   parentOf: string[];
 }
 
@@ -27,6 +27,7 @@ export enum PolicyNodeType {
 export enum OutputNodeType {
   Resource = 'Resource',
   Response = 'Response',
+  Parameter = 'Parameter',
 }
 
 export enum DefaultNodeType {
@@ -38,10 +39,6 @@ export enum DefaultNodeType {
 export type PolicyNodeData = {
   label: string;
   type: PolicyNodeType;
-}
-
-export type InputNodeValue = {
-  input: ResourceItem | ResponseItem | FieldItem;
 }
 
 export type PolicyNodeValue = {
