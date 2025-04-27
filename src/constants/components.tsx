@@ -1,5 +1,5 @@
 import { DefaultNodeType, InputNodeType, OutputNodeType, PolicyNodeType } from "../types/nodeTypes";
-import { DefaultPlatformIcon, DefaultRequestIcon, DefaultUserIcon, EncryptionPolicyIcon, FilterPolicyIcon, ProjectionPolicyIcon, RenamePolicyIcon, ResourceFieldInputIcon, ResourceInputIcon, ResourceOutputIcon, ResourceParameterInputIcon, ResourceResponseInputIcon, ResourceResponseOutputIcon } from "./icons";
+import { DefaultPlatformIcon, DefaultRequestIcon, DefaultUserIcon, EncryptionPolicyIcon, FilterPolicyIcon, ProjectionPolicyIcon, RenamePolicyIcon, ResourceInputIcon, ResourceOutputIcon, ResourceParameterInputIcon, ResourceResponseInputIcon, ResourceResponseOutputIcon } from "./icons";
 
 export const INPUT_COMPONENTS = [
   {
@@ -19,12 +19,14 @@ export const INPUT_COMPONENTS = [
     type: InputNodeType.Parameter,
     label: "Parameter",
   },
+  /*
   {
     icon: ResourceFieldInputIcon(),
     type: InputNodeType.Field,
     label: "Field",
     available: true,
   },
+  */
 ]
 
 export const POLICY_COMPONENTS = [

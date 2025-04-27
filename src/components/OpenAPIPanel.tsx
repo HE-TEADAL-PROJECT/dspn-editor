@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { GlobalContext } from './GlobalContext.tsx';
+import { GlobalContext } from './util/GlobalContext.tsx';
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
 

@@ -1,6 +1,6 @@
 import { Flex, Box, IconButton } from "@chakra-ui/react";
-import { DEFAULT_COMPONENTS, INPUT_COMPONENTS, OUTPUT_COMPONENTS, POLICY_COMPONENTS } from "../constants/components";
-import { NodeType, NodeData, PolicyNodeValue } from "../types/nodeTypes";
+import { DEFAULT_COMPONENTS, INPUT_COMPONENTS, OUTPUT_COMPONENTS, POLICY_COMPONENTS } from "../../constants/components";
+import { NodeType, NodeData, PolicyNodeValue } from "../../types/nodeTypes";
 interface PanelSingleComponentsProps {
   componentType: NodeType;
   onDragFunc: (event: React.DragEvent<HTMLDivElement> | React.DragEvent<HTMLButtonElement>, node: NodeData) => void;

@@ -1,5 +1,5 @@
 import { ReactFlowProvider } from '@xyflow/react'
-import { GlobalProvider } from './components/GlobalProvider'
+import { GlobalProvider } from './components/util/GlobalProvider'
 import Workflow from './components/Workflow'
 import { ChakraProvider, defaultSystem  } from '@chakra-ui/react'
 import './App.css'

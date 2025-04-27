@@ -1,15 +1,15 @@
 import { Flex, IconButton } from "@chakra-ui/react";
 import { faFileImport, faFileUpload, faFileArrowDown, faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { bottomButtonHoverColor, bottomButtonColor } from "../constants/default";
+import { bottomButtonHoverColor, bottomButtonColor } from "../../constants/default";
 import { useState, useContext, useEffect } from "react";
-import { GlobalContext } from "./GlobalContext";
-import useParse from "./UseParse";
-import { OpenAPI, Parameter, PathItem, Schema,} from "../types/OpenAPI";
-import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from "../types/componentTypes";
+import { GlobalContext } from "../util/GlobalContext";
+import useParse from "../util/UseParse";
+import { OpenAPI, Parameter, PathItem, Schema,} from "../../types/OpenAPI";
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from "../../types/componentTypes";
 import { Node, useReactFlow } from '@xyflow/react';
-import { DEFAULT_COMPONENTS } from "../constants/components";
-import { NodeData, OutputNodeType } from "../types/nodeTypes";
+import { DEFAULT_COMPONENTS } from "../../constants/components";
+import { NodeData, OutputNodeType } from "../../types/nodeTypes";
 
 
 export default function PanelActions() {

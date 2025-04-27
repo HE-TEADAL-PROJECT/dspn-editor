@@ -2,7 +2,7 @@ import { Flex, Text } from "@chakra-ui/react";
 import React from "react";
 import PanelActions from "./PanelActions";
 import { Panel } from "@xyflow/react";
-import { NodeData, NodeType } from "../types/nodeTypes";
+import { NodeData, NodeType } from "../../types/nodeTypes";
 import PanelComponents from "./PanelComponents";
 import PanelSingleComponents from "./PanelSingleComponent";
 

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { Flex, IconButton, Box } from "@chakra-ui/react";
-import { INPUT_COMPONENTS, OUTPUT_COMPONENTS } from "../constants/components";
-import { InputNodeType, NodeData, NodeType, OutputNodeType, PolicyNodeType } from "../types/nodeTypes";
-import { GlobalContext } from "./GlobalContext";
-import { FieldItem, ResourceItem, ResponseItem } from "../types/componentTypes";
+import { INPUT_COMPONENTS, OUTPUT_COMPONENTS } from "../../constants/components";
+import { InputNodeType, NodeData, NodeType, OutputNodeType, PolicyNodeType } from "../../types/nodeTypes";
+import { GlobalContext } from "../util/GlobalContext";
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from "../../types/componentTypes";
 
 interface PanelComponentsProps {
   componentType: NodeType;
@@ -95,7 +95,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({ component, onDragFunc, menu
   );
 };
 
-function getInputEntries(list: ResourceItem[] | ResponseItem[] | FieldItem[], inputSubType: InputNodeType) {
+function getInputEntries(list: ResourceItem[] | ResponseItem[] | FieldItem[] | ParameterItem[], inputSubType: InputNodeType) {
   const outputList: NodeData[] = [];
   list.forEach((item) => {
     outputList.push({

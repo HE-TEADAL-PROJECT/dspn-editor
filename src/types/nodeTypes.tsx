@@ -43,6 +43,7 @@ export type PolicyNodeData = {
 
 export type PolicyNodeValue = {
   policy: string;
+  encryptionAlgorithm?: string;
 }
 
 export type OutputNodeValue = {

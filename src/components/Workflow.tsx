@@ -22,11 +22,11 @@ import { InputNodeType, NodeData, NodeType, PolicyNodeType } from '../types/node
 import RelationConnection from './diagramComponents/RelationConnection';
 import { baseMarkerEnd, } from '../constants/nodesDefinitions';
 import ConnectionLine from './diagramComponents/ConnectionLine';
-import { GlobalContext } from './GlobalContext';
+import { GlobalContext } from './util/GlobalContext';
 import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from '../types/componentTypes';
-import LeftPanel from './LeftPanel';
+import LeftPanel from './pageComponents/LeftPanel';
 import { DEFAULT_COMPONENTS } from '../constants/components';
-import RightPanel from './RightPanel';
+import RightPanel from './pageComponents/RightPanel';
 
 const nodeTypes = {
   inputComponent: InputComponent,
@@ -241,10 +241,10 @@ const Workflow = () => {
 
     // InputNode | PolicyNode - PolicyNode: only if the previous output is not undefined
     if(policyType === PolicyNodeType.Rename) {
-      return sourceNode.output !== undefined;
+      return sourceNode.output?.tag === "Resource" || sourceNode.output?.tag === "Response";
     }
     else if(policyType === PolicyNodeType.Encryption) {
-      return false; //TODO: implement encryption policy
+      return sourceNode.output?.tag === "Response";
     }
     else if(policyType === PolicyNodeType.Projection) {
       return sourceNode.output?.tag === "Response";
@@ -618,7 +618,7 @@ const Workflow = () => {
         onNodeDragStop={onNodeDragStop}
       >
         <LeftPanel onDragFunc={onDragStart} />
-        {selectedNode && < RightPanel node={selectedNode.data as NodeData} />}
+        {selectedNode && < RightPanel node={selectedNode.data as NodeData}/>}
         <Background variant={BackgroundVariant.Lines} gap={10} color = "#f1f1f1" id = "1" />
         <Background variant={BackgroundVariant.Lines} gap={100} color = "#ccc" id = "2" />
         <Controls />

@@ -1,6 +1,6 @@
 import { createContext } from 'react';
-import { OpenAPI } from '../types/OpenAPI';
-import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from '../types/componentTypes';
+import { OpenAPI } from '../../types/OpenAPI';
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from '../../types/componentTypes';
 
 interface GlobalContextType  {
   openAPI: OpenAPI | undefined;

@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
 import { GlobalContext } from "./GlobalContext";
-import { OpenAPI } from "../types/OpenAPI";
-import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from "../types/componentTypes";
+import { OpenAPI } from "../../types/OpenAPI";
+import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from "../../types/componentTypes";
 
 
 interface GlobalProviderProps {
