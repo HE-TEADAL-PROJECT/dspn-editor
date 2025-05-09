@@ -150,7 +150,7 @@ const Workflow = () => {
 
   const onConnectedOutput = (sourceNode: NodeData, targetNode: NodeData) => {
     // If still default name, change it to target's
-    if(targetNode.label === targetNode.subType && sourceNode.output?.value) {
+    if(targetNode.label === targetNode.subType && sourceNode.output?.value?.name) {
       targetNode.label = sourceNode.output.value.name;
     }
 
@@ -234,7 +234,7 @@ const Workflow = () => {
   const isPolicyConnectionValid = (sourceNode: NodeData, targetNode: NodeData) => {
     const policyType = targetNode.subType as PolicyNodeType;
 
-    // DefaultNode - PolicyNode
+    // DefaultNode - PolicyNode: [TODO] always?
     if(sourceNode.type === NodeType.Default) {
       return true;
     }
@@ -393,18 +393,12 @@ const Workflow = () => {
     };
     setNodes((nds) => nds.concat(newNode));
 
+    // Update the default components so this node can no longer be added
     DEFAULT_COMPONENTS.forEach((component) => {
       if(component.type === node.subType) {
         component.available = false;
       }
     });
-
-    //Udpate usage of default components
-    /*const newComponents: DefaultComponents = {...defaultComponents};
-    if(node.subType === DefaultNodeType.Request) newComponents.request = true;
-    else if(node.subType === DefaultNodeType.Platform) newComponents.platform = true;
-    else if(node.subType === DefaultNodeType.User) newComponents.user = true;
-    setDefaultComponents(newComponents);*/
   }
   
   const onNodesDelete = (nodesToDelete: Node[]) => {
@@ -461,9 +455,6 @@ const Workflow = () => {
       }
     });
   }
-
-  // TODO remove nodes
-
 
   // NODE AND PANE CLICK
   const [selectedNode, setSelectedNode] = useState<Node | undefined>(undefined);

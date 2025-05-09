@@ -1,0 +1,34 @@
+{
+  "method": {
+    "description": "HTTP request method",
+    "type": "string",
+    "options": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE", "CONNECT"],
+    "value": "POST"
+  },
+  "url": {
+    "description": "The complete URL for the request",
+    "type": "string",
+    "value": "https://api.example.com/users/123"
+  },
+  "path": {
+    "description": "The path component of the URL",
+    "type": "string",
+    "value": "/users/123"
+  },
+  "protocol": {
+    "description": "The protocol used for the request",
+    "type": "string",
+    "options": ["http", "https", "ws", "wss"],
+    "value": "https"
+  },
+  "host": {
+    "description": "The host name or IP address of the server",
+    "type": "string",
+    "value": "api.myservice.com"
+  },
+  "port": {
+    "description": "The port number on the server",
+    "type": "number",
+    "value": 8080
+  }
+}

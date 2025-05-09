@@ -26,7 +26,6 @@ export default function BaseComponent({
   id,
   parentOf,
 }: BaseComponentProps) {
-  const [nodeHeight, setNodeHeight] = useState(minNodeHeight);
   const {deleteElements, getNode} = useReactFlow();
   
   const canvas = document.createElement("canvas");
@@ -37,21 +36,30 @@ export default function BaseComponent({
     svgWidth = Math.max(context.measureText(label).width + 50, minNodeWidth);
   }
   
+  const [nodeHeight, setNodeHeight] = useState(minNodeHeight);
   const [nodeWidth, setNodeWidth] = useState(svgWidth);
   
   useEffect(() => {
-  if(parentOf){
-    let w = svgWidth;
-    let h = minNodeHeight;
-    for(let i = 0; i < parentOf.length; i++){
-      const child = getNode(parentOf[i]);
-      w += child?.measured?.width || minNodeWidth + 40;
-      h += child?.measured?.height || minNodeHeight + 40;
+    if(parentOf){
+      let w = svgWidth;
+      let h = minNodeHeight;
+      for(let i = 0; i < parentOf.length; i++){
+        const child = getNode(parentOf[i]);
+        w += child?.measured?.width || minNodeWidth + 40;
+        h += child?.measured?.height || minNodeHeight + 40;
+      }
+      setNodeWidth(w);
+      setNodeHeight(h);
     }
-    setNodeWidth(w);
-    setNodeHeight(h);
-  }
-}, [parentOf, getNode, svgWidth]);
+  }, [parentOf, getNode, svgWidth]);
+
+  useEffect(() => {
+    if (context?.font) {
+      context.font = `${fontSize}px ${"Arial"}`;
+      setNodeWidth(Math.max(context.measureText(label).width + 50, minNodeWidth));
+    }
+
+  }, [context, label]);
 
   const icon = getIcon(type, subType);
 

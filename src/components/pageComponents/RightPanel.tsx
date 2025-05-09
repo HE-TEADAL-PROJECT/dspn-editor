@@ -4,6 +4,7 @@ import { Box, Heading,} from "@chakra-ui/react";
 import { JsonView } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { PolicyValueComponent } from "./PolicyValueComponent";
+import { DefaultValueComponent } from "./DefaultValueComponent";
 
 interface RightPanelProps {
   node: NodeData;
@@ -16,6 +17,10 @@ export default function RightPanel({node}: RightPanelProps) {
   switch (node.type) {
     case NodeType.Policy:
       nodeValueComponent = <PolicyValueComponent node={node} />;
+      hasValue = true;
+      break;
+    case NodeType.Default:
+      nodeValueComponent = DefaultValueComponent({ node });
       hasValue = true;
       break;
   }
@@ -55,7 +60,7 @@ export default function RightPanel({node}: RightPanelProps) {
           </Box>
         </>}
         
-        { /* [TODO]: Remove */}
+        { /* Properties Viewer for debugging
         <Heading size="sm" mt={4} mb={2}> {node.label} Properties:</Heading>
         <Box 
           borderRadius="md"
@@ -66,6 +71,7 @@ export default function RightPanel({node}: RightPanelProps) {
             shouldExpandNode={(level: number) => level < 1}
           />
         </Box>
+        */}
       </Box>
     </Panel>
   );

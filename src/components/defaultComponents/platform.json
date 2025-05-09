@@ -1,0 +1,7 @@
+{
+  "id": {
+    "description": "Unique identifier for the user",
+    "type": "string",
+    "value": "usr_12345678"
+  }
+}

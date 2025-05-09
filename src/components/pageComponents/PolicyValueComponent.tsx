@@ -39,7 +39,7 @@ export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
           return;
       }
 
-      //[TODO]: Update the input value of the possible connected nodes
+      //[TODO]: Update the input value of the possible connected nodes. Now the user needs to reconnect the nodes to see the changes.
     }
   };
   
@@ -117,9 +117,10 @@ export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
     }
   }
 
+  // Handle projection policy, only for Response nodes
   const handleProjection = () => {
-    // Split the policy string by semicolon to get individual expressions
-    const expressions: string[] = (node.expression as PolicyNodeValue).policy.split(';');
+    // Split the policy string by semicolon to get individual expressions, removing whitespaces
+    const expressions: string[] = ((node.expression as PolicyNodeValue).policy.split(';')).map(expr => expr.trim());
 
     if(node.output?.tag === 'Response') {
       //Retrieve the schema making a deep copy of it:

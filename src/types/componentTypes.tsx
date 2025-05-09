@@ -62,7 +62,9 @@ export type DefaultItem = {
   tag: "Default";
   name : string;
   label : string;
-  type : string;
   index : number;
   canBeAdded : boolean;
+  value: {name: string, value: Record<string, unknown>};
+  original: string; // Original name of the component
 }
+

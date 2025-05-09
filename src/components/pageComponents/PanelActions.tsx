@@ -123,6 +123,14 @@ export default function PanelActions() {
     console.log("Model exported");
   }
 
+  // EXPORT OPENAPI FUNCTION
+  /* TODO: There still some issues with the $ref.
+    Already tried to use SwaggerParser.bundle, from "@apidevtools/swagger-parser", but no results.
+    Also tried to change $$ref in $ref.
+    To use SwaggerParser.bundle, the package is needed to be installed in the project and at the beginning added:
+      import { Buffer } from 'buffer';
+      window.Buffer = Buffer; 
+  */
   function exportOpenAPI() {
     // 1. Deep clone the OpenAPI object to avoid modifying the original
     const finalOpenAPI: OpenAPI = JSON.parse(JSON.stringify(openAPI));
@@ -132,12 +140,14 @@ export default function PanelActions() {
     // 3. Search for output nodes and change the modified parts, in the order: Path, Parameter, Response, Field
     const nodes = getNodes();
     const outputNodes = nodes.filter((node) => node.type === 'outputComponent' && node.data?.output);
+    const notVisitedNodes = outputNodes.filter((node) => node.data?.subType === OutputNodeType.Response);
 
     // Cycle through the Path output nodes 
     for (const node of outputNodes) {
       const resourceNode = node.data as NodeData;
       if(!resourceNode.output) continue; // Skip if no output
 
+      // Output Path
       if(resourceNode.subType === OutputNodeType.Resource){
         // Delete the path entry with the original path name and replace it with the new one
         delete finalOpenAPI.paths[resourceNode.output.original];
@@ -154,16 +164,32 @@ export default function PanelActions() {
 
             // If it's part of this path, change the response
             if(oldPathName === pathName){
+              // Remove from the notVisited nodes
+              const index = notVisitedNodes.indexOf(node);
+              if (index > -1) {
+                notVisitedNodes.splice(index, 1);
+              }
+
               // Change the schema in the response [TODO] create a new schema and change the ref?
               finalOpenAPI.paths[pathName]['get'].responses['200'].content!['application/json'].schema = responseNode.output.value.value as Schema;
             }
 
-            //[TODO] Cycle through the Field output nodes of this path
+            // If OutputNodeType.Field are added, cycle through Field output nodes of this path here
           }
-          else if(responseNode.subType === OutputNodeType.Parameter){
-            //[TODO]
-          }
+          // If OutputNodeType.Parameter are added, cycle through them here
         }
+      }
+    }
+
+    // Cycle through the Response output nodes that were not visited because they are not part of a path present in the output nodes
+    for (const node of notVisitedNodes) {
+      const responseNode = node.data as NodeData;
+      if(!responseNode.output) continue; // Skip if no output
+
+      const pathName = responseNode.output.original.split(':')[0];
+
+      if(finalOpenAPI.paths[pathName]?.['get']?.responses?.['200']?.content?.['application/json']?.schema){
+        finalOpenAPI.paths[pathName]['get'].responses['200'].content!['application/json'].schema = responseNode.output.value.value as Schema;
       }
     }
 
@@ -229,7 +255,6 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
 
   if(!openAPI.paths){
     console.error("No paths found in OpenAPI object");
-    //TODO: add a notification to the user
     return;
   }
 
@@ -256,7 +281,6 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
         else{
           console.log("No schema ref found for GET method in path: ", resource);
           const schema: Schema = openAPI.paths[paths[path]][methods[method]].responses['200'].content!['application/json'].schema;
-          //[TODO]: take the whole name of just the last part?
           const name = resource.split('/')[resource.split('/').length - 1];
           schemas[name] = schema;
           requestedParameters = openAPI.paths[paths[path]][methods[method]].parameters || [];
@@ -292,7 +316,7 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
       
       let properties = response.properties;
       let prefix = '';
-      //If the response is an array, create a field for the items TODO: Check if the items are objects or arrays
+      //If the response is an array, create a field for the items
 
       if(response.type == 'array'){
         properties = response.items!.properties;
@@ -301,9 +325,9 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
         const subResponseName = subRef!.split('/')[subRef!.split('/').length - 1];
         prefix = '.' + subResponseName;
 
-        //[TODO] ADD again items field to the responseItem
-      /*
-        const fieldItems: FieldItem = {
+      
+        
+        /*const fieldItems: FieldItem = {
           name: 'items',
           label: responseLabel + ".items",
           type: response.type,
@@ -311,6 +335,8 @@ function analyzeOpenAPI (openAPI : OpenAPI) {
           index: fields.length,
           canBeAdded: true,
           tag: "Field",
+          value: { name: 'items', value: response },
+          original: responseLabel + ".items",
         };
         responseItem.properties.push(fieldItems);
         fields.push(fieldItems);*/
