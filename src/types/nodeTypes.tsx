@@ -4,7 +4,7 @@ export type NodeData = {
   label: string;
   type: NodeType;
   subType: InputNodeType | PolicyNodeType | OutputNodeType | DefaultNodeType;
-  expression?: PolicyNodeValue;
+  policy?: PolicyNodeValue;
   input?: ResourceItem | ResponseItem | ParameterItem | FieldItem | DefaultItem;
   output?: ResourceItem | ResponseItem | ParameterItem | FieldItem | DefaultItem; // PathItem | Schema | Parameter | Property.
   parentOf: string[];
@@ -22,6 +22,8 @@ export enum PolicyNodeType {
   Encryption = 'Encryption',
   Projection = 'Projection',
   Filter = 'Filter',
+  Aggregation = 'Aggregation',
+  Anonymization = 'Anonymization',
 }
 
 export enum OutputNodeType {
@@ -41,8 +43,11 @@ export type PolicyNodeData = {
 }
 
 export type PolicyNodeValue = {
-  policy: string;
+  expression: string;
   encryptionAlgorithm?: string;
+  aggregatedAttribute?: string;
+  aggregatingAttributes?: string[];
+  defaultItemProperties?: string[];
 }
 
 export type OutputNodeValue = {

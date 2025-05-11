@@ -3,7 +3,7 @@
 
 //Class names used to add stroke to the icons
 
-import { faArrowRight, faFilter, faLayerGroup, faPencil, faQuestion, faScissors, faShieldHalved, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faArrowsToDot, faFilter, faLayerGroup, faPencil, faQuestion, faScissors, faShieldHalved, faUser, faUserSecret } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { defaultColor, inputColor, policyColor } from "./nodesDefinitions";
 import { NodeType, InputNodeType, OutputNodeType, PolicyNodeType, DefaultNodeType } from "../types/nodeTypes";
@@ -69,6 +69,18 @@ export function ProjectionPolicyIcon(){
 export function FilterPolicyIcon(){
   return(
     <FontAwesomeIcon icon={faFilter} style={{color: policyColor}} className="my-icon"/>
+  );
+}
+
+export function AggregationPolicyIcon(){
+  return(
+    <FontAwesomeIcon icon={faArrowsToDot} style={{color: policyColor}} className="my-icon"/>
+  );
+}
+
+export function AnonymizationPolicyIcon(){
+  return(
+    <FontAwesomeIcon icon={faUserSecret} style={{color: policyColor}} className="my-icon"/>
   );
 }
 
@@ -149,6 +161,12 @@ export function getIcon(type: NodeType, subType: InputNodeType | PolicyNodeType 
           break;
         case PolicyNodeType.Filter:
           icon = FilterPolicyIcon();
+          break;
+        case PolicyNodeType.Aggregation:
+          icon = AggregationPolicyIcon();
+          break;
+        case PolicyNodeType.Anonymization:
+          icon = AnonymizationPolicyIcon();
           break;
         default:
           console.error("Unknown Policy node subtype:", subType);

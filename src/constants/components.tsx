@@ -1,5 +1,5 @@
 import { DefaultNodeType, InputNodeType, OutputNodeType, PolicyNodeType } from "../types/nodeTypes";
-import { DefaultPlatformIcon, DefaultRequestIcon, DefaultUserIcon, EncryptionPolicyIcon, FilterPolicyIcon, ProjectionPolicyIcon, RenamePolicyIcon, ResourceInputIcon, ResourceOutputIcon, ResourceParameterInputIcon, ResourceResponseInputIcon, ResourceResponseOutputIcon } from "./icons";
+import { AggregationPolicyIcon, AnonymizationPolicyIcon, DefaultPlatformIcon, DefaultRequestIcon, DefaultUserIcon, EncryptionPolicyIcon, FilterPolicyIcon, ProjectionPolicyIcon, RenamePolicyIcon, ResourceInputIcon, ResourceOutputIcon, ResourceParameterInputIcon, ResourceResponseInputIcon, ResourceResponseOutputIcon } from "./icons";
 
 export const INPUT_COMPONENTS = [
   {
@@ -52,6 +52,18 @@ export const POLICY_COMPONENTS = [
     icon: FilterPolicyIcon(),
     type: PolicyNodeType.Filter,
     label: "Filter",
+    available: true,
+  },
+  {
+    icon: AggregationPolicyIcon(),
+    type: PolicyNodeType.Aggregation,
+    label: "Aggregation",
+    available: true,
+  },
+  {
+    icon: AnonymizationPolicyIcon(),
+    type: PolicyNodeType.Anonymization,
+    label: "Anonymization",
     available: true,
   },
 ]

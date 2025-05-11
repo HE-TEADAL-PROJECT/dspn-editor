@@ -23,7 +23,7 @@ import RelationConnection from './diagramComponents/RelationConnection';
 import { baseMarkerEnd, } from '../constants/nodesDefinitions';
 import ConnectionLine from './diagramComponents/ConnectionLine';
 import { GlobalContext } from './util/GlobalContext';
-import { FieldItem, ParameterItem, ResourceItem, ResponseItem } from '../types/componentTypes';
+import { DefaultItem, FieldItem, ParameterItem, ResourceItem, ResponseItem } from '../types/componentTypes';
 import LeftPanel from './pageComponents/LeftPanel';
 import { DEFAULT_COMPONENTS } from '../constants/components';
 import RightPanel from './pageComponents/RightPanel';
@@ -141,10 +141,17 @@ const Workflow = () => {
   }
 
   const onConnectedPolicy = (sourceNode: NodeData, targetNode: NodeData) => {
-    if(sourceNode.output !== undefined) {
-      //Update input and output:
-      targetNode.input = JSON.parse(JSON.stringify(sourceNode.output));
-      targetNode.output = JSON.parse(JSON.stringify(sourceNode.output));
+    if(sourceNode.output) {
+      if (sourceNode.output?.tag === "Default") {
+        if(targetNode.policy){
+          targetNode.policy.defaultItemProperties = Object.keys((sourceNode.output as DefaultItem).value.value);
+        }
+      }
+      else {
+        //Update input and output:
+        targetNode.input = JSON.parse(JSON.stringify(sourceNode.output));
+        targetNode.output = JSON.parse(JSON.stringify(sourceNode.output));
+      }
     }
   }
 
@@ -234,11 +241,6 @@ const Workflow = () => {
   const isPolicyConnectionValid = (sourceNode: NodeData, targetNode: NodeData) => {
     const policyType = targetNode.subType as PolicyNodeType;
 
-    // DefaultNode - PolicyNode: [TODO] always?
-    if(sourceNode.type === NodeType.Default) {
-      return true;
-    }
-
     // InputNode | PolicyNode - PolicyNode: only if the previous output is not undefined
     if(policyType === PolicyNodeType.Rename) {
       return sourceNode.output?.tag === "Resource" || sourceNode.output?.tag === "Response";
@@ -249,6 +251,16 @@ const Workflow = () => {
     else if(policyType === PolicyNodeType.Projection) {
       return sourceNode.output?.tag === "Response";
     }
+    else if(policyType === PolicyNodeType.Filter) {
+      return sourceNode.output?.tag === "Response" || sourceNode.output?.tag === "Default";
+    }
+    else if(policyType === PolicyNodeType.Aggregation) {
+      return sourceNode.output?.tag === "Response";
+    }
+    else if(policyType === PolicyNodeType.Anonymization) {
+      return sourceNode.type === NodeType.Input || sourceNode.type === NodeType.Policy; //TODO
+    }
+
     return false;
   }
 
@@ -619,4 +631,3 @@ const Workflow = () => {
 }
 
 export default Workflow;
-

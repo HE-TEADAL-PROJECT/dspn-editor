@@ -78,7 +78,7 @@ const useParse = (openAPIFile: null | string): UseParseResult => {
         alert("Error parsing OpenAPI file:\n" + err);
         setError(err);
         setIsLoaded(false);
-      }
+      } 
     }
   }, [openAPIFile]);
 

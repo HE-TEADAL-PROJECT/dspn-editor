@@ -5,24 +5,71 @@ import { Property, Schema } from "../../types/OpenAPI";
 
 export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
 
-  const handleSave = (expr:string, secondValue:boolean = false) => {
-    if(secondValue){
+  let expressionTitle = "Expression";
+  let placeholder = "Enter your expression";
+  switch (node.subType as PolicyNodeType){
+    case PolicyNodeType.Rename:
+      expressionTitle = "Attributes to rename";
+      break;
+    case PolicyNodeType.Projection:
+      expressionTitle = "Attributes to maintain";
+      break;
+    case PolicyNodeType.Encryption:
+      expressionTitle = "Attributes to encrypt";
+      break;
+    case PolicyNodeType.Filter:
+      expressionTitle = "Filter expression";
+      break;
+    case PolicyNodeType.Aggregation:
+      expressionTitle = "Aggregation function";
+      placeholder = "AVG, SUM, MIN, MAX, COUNT";
+      break;
+    case PolicyNodeType.Anonymization:
+      expressionTitle = "Anonymization expression";
+      break;
+    default:
+      console.error("Unknown policy node type:", node.subType);
+      return null;
+  }
+
+  const handleSave = (expr:string, valueNumber:number = 0) => {
+    if(valueNumber > 0){
       if(node.subType === PolicyNodeType.Encryption){
         // Save the encryption algorithm in the node expression
-        if (!node.expression) {
-          node.expression = { policy:'', encryptionAlgorithm: expr };
+        if (!node.policy) {
+          node.policy = { expression:'', encryptionAlgorithm: expr };
         } else {
-          (node.expression as PolicyNodeValue).encryptionAlgorithm = expr;
+          (node.policy as PolicyNodeValue).encryptionAlgorithm = expr;
         }
       }
-      return;
+      else if(node.subType === PolicyNodeType.Aggregation){
+        expr = expr.trim();
+        // Save the aggregated attribute in the node expression
+        if (valueNumber === 1) {
+          if (!node.policy) {
+            node.policy = { expression:'', aggregatedAttribute: expr };
+          } else {
+            (node.policy as PolicyNodeValue).aggregatedAttribute = expr;
+          }
+        }
+        // Save the aggregating attributes in the node expression
+        else if (valueNumber === 2) {
+          const aggregatingAttributes = expr.split(';').map(attr => attr.trim());
+          if (!node.policy) {
+            node.policy = { expression:'', aggregatingAttributes: aggregatingAttributes };
+          } else {
+            (node.policy as PolicyNodeValue).aggregatingAttributes = aggregatingAttributes;
+          }
+        }
+      }
     }
-
-    // If not second value: save the value in the node expression
-    if (!node.expression) {
-      node.expression = { policy: expr };
-    } else {
-      (node.expression as PolicyNodeValue).policy = expr;
+    else{
+       // If not second value: save the value in the node expression
+      if (!node.policy) {
+        node.policy = { expression: expr };
+      } else {
+        (node.policy as PolicyNodeValue).expression = expr;
+      }
     }
     
     // Update output if needed
@@ -34,8 +81,16 @@ export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
         case PolicyNodeType.Projection:
           handleProjection();
           break;
+        case PolicyNodeType.Aggregation:
+          handleAggregation();
+          break;
+        case PolicyNodeType.Filter:
+          handleFilter();
+          break;
+        case PolicyNodeType.Encryption:
+          handleEncryption();
+          break;
         default:
-          console.error("Unknown policy node type:", node.subType);
           return;
       }
 
@@ -45,7 +100,7 @@ export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
   
   const handleRename = () => {
     // Split the policy string by semicolon to get individual expressions
-    const expressions: string[] = (node.expression as PolicyNodeValue).policy.split(';');
+    const expressions: string[] = (node.policy as PolicyNodeValue).expression.split(';');
 
     if(node.output?.tag === 'Resource'){
       for (const expression of expressions) {
@@ -53,7 +108,7 @@ export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
         
         if (!oldName || !newName){ // If it's a single name it's a rename of the value:
           node.output!.value.name = expression;
-          (node.expression as PolicyNodeValue).policy = expression; // Keep the last valid expression in the policy as the expression
+          (node.policy as PolicyNodeValue).expression = expression; // Keep the last valid expression in the policy as the expression
         }
       }
     }
@@ -103,7 +158,7 @@ export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
             console.log('Property not found:', oldName);
             // Remove the expression from the policy string
             const updatedExpressions = expressions.filter(expr => expr !== expression);
-            (node.expression as PolicyNodeValue).policy = updatedExpressions.join(';');
+            (node.policy as PolicyNodeValue).expression = updatedExpressions.join(';');
           }
         }
         else {
@@ -120,36 +175,29 @@ export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
   // Handle projection policy, only for Response nodes
   const handleProjection = () => {
     // Split the policy string by semicolon to get individual expressions, removing whitespaces
-    const expressions: string[] = ((node.expression as PolicyNodeValue).policy.split(';')).map(expr => expr.trim());
+    const expressions: string[] = ((node.policy as PolicyNodeValue).expression.split(';')).map(expr => expr.trim());
 
     if(node.output?.tag === 'Response') {
       //Retrieve the schema making a deep copy of it:
       const schema = JSON.parse(JSON.stringify(node.input?.value.value)) as Schema;
+      const properties: { [propertyName: string]: Property } = schema.properties || schema.items?.properties || {};
+      const required = schema.required || schema.items?.required || [];
       
-      for (const expression of expressions) {
-        const properties: { [propertyName: string]: Property } = schema.properties || schema.items?.properties || {};
-        
-        // Check if the oldName exists in the properties
-        if (properties[expression]) {
-          //Delete the property from the schema
-          delete properties[expression];
-        } else {
-          console.log('Property not found:', expression);
-          // Remove the expression from the policy string
-          const updatedExpressions = expressions.filter(expr => expr !== expression);
-          (node.expression as PolicyNodeValue).policy = updatedExpressions.join(';');
-        }
+      // Cycle through the properties and remove the ones that are not in the expressions
+      for (const property in properties) {
+        if (!expressions.includes(property)) {
+          delete properties[property];
 
-        // Check if the expression is in the required ones:
-        const required = schema.required || schema.items?.required || [];
-        if(required.includes(expression)) {
-          //Delete the property from the required ones
-          const index = required.indexOf(expression);
-          if (index > -1) {
-            required.splice(index, 1);
+          if(required.includes(property)) {
+            //Delete the property from the required ones
+            const index = required.indexOf(property);
+            if (index > -1) {
+              required.splice(index, 1);
+            }
           }
         }
       }
+
       // Replace the original properties object
       if(node.output){
         node.output.value.value = schema;
@@ -157,22 +205,109 @@ export const PolicyValueComponent = ({ node,}: { node: NodeData }) => {
     }
   }
 
+  // Handle aggregatio policy
+  const handleAggregation = () => {
+    if(node.policy?.expression && node.policy.aggregatedAttribute) {
+      if(node.output?.tag === 'Response'){
+        //Retrieve the schema making a deep copy of it:
+        const schema = JSON.parse(JSON.stringify(node.input?.value.value)) as Schema;
+
+        const properties: { [propertyName: string]: Property } = schema.properties || schema.items?.properties || {};
+        
+        if(properties[node.policy.aggregatedAttribute]) {
+          const property: Property = properties[node.policy.aggregatedAttribute];
+          const name: string = node.policy.expression.toLowerCase() + '_' + node.policy.aggregatedAttribute.toLowerCase();
+
+          const newSchema: Schema = {
+            type: 'object',
+            properties: { [name]: property },
+          };
+
+          // Replace the original properties object
+          if(node.output){
+            node.output.value.value = newSchema;
+          }
+        }
+        else{
+          console.error('Property not found:', node.policy.aggregatedAttribute);
+          node.policy.aggregatedAttribute = '';
+        }
+      }
+      else{
+        console.error('Output is not defined for aggregation policy or not a Response node');
+      }
+    }
+    else if (node.output){
+      node.output.value.value = {
+        type: 'object',
+        properties: { },
+      };
+    }
+  }
+
+  // Handle filter policy
+  const handleFilter = () => {
+    // TODO: Implement filter policy handling
+  }
+
+  // Handle encryption policy
+  const handleEncryption = () => {
+    // Split the policy string by semicolon to get individual expressions, removing whitespaces
+    const expressions: string[] = ((node.policy as PolicyNodeValue).expression.split(';')).map(expr => expr.trim());
+    
+    //Retrieve the schema making a deep copy of it:
+    const schema = JSON.parse(JSON.stringify(node.input?.value.value)) as Schema;
+    const properties: { [propertyName: string]: Property } = schema.properties || schema.items?.properties || {};
+
+    let newExpressions = expressions.map(expr => expr.trim());
+
+    for (const expression of expressions) {
+      if (!properties[expression]) {
+        console.error('Property not found:', expression);
+        // Remove the expression from the policy string
+        newExpressions = newExpressions.filter(expr => expr !== expression);
+      }
+    }
+
+    // Update the policy expression with the new expressions
+    (node.policy as PolicyNodeValue).expression = newExpressions.join(';');
+  }
+
   return (
     <>
       <InputValueComponent 
-        title="Policy" 
-        initialValue={node.expression?.policy || ''} 
+        title={expressionTitle}
+        initialValue={node.policy?.expression || ''} 
         saveCallback={handleSave}
-        secondValue={false}
+        placeholder={placeholder}
+        valueNumber={0}
       />
       {node.subType === PolicyNodeType.Encryption &&
         <InputValueComponent
           title="Encryption Algorithm"
-          initialValue={node.expression?.encryptionAlgorithm || ''}
+          initialValue={node.policy?.encryptionAlgorithm || ''}
           placeholder="Enter the encryption algorithm"
           saveCallback={handleSave}
-          secondValue={true}
+          valueNumber={1}
         />
+      }
+      {node.subType === PolicyNodeType.Aggregation &&
+        <>
+          <InputValueComponent
+            title="Aggregated attribute"
+            initialValue={(node.policy as PolicyNodeValue).aggregatedAttribute || ''}
+            placeholder="Enter the aggregated attribute"
+            saveCallback={handleSave}
+            valueNumber={1}
+          />
+          <InputValueComponent
+            title="Aggregating attributes"
+            initialValue={(node.policy as PolicyNodeValue).aggregatingAttributes?.join(';') || ''}
+            placeholder="Enter the aggregating attributes separated by semicolon"
+            saveCallback={handleSave}
+            valueNumber={2}
+          />
+        </>
       }
   </>
   )
@@ -183,11 +318,11 @@ interface InputValueComponentProps {
   title: string;
   initialValue: string;
   placeholder?: string;
-  saveCallback: (value: string, secondValue: boolean) => void;
-  secondValue: boolean;
+  saveCallback: (value: string, valueNumber: number) => void;
+  valueNumber: number;
 }
 
-export const InputValueComponent = ({ title, initialValue, placeholder, saveCallback, secondValue}: InputValueComponentProps) => {
+export const InputValueComponent = ({ title, initialValue, placeholder, saveCallback, valueNumber}: InputValueComponentProps) => {
   const [value, setValue] = useState(initialValue);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -203,12 +338,13 @@ export const InputValueComponent = ({ title, initialValue, placeholder, saveCall
             setValue(e.target.value);
             setIsDirty(true);
           }}
+          width={"300px"}
         />
         <Button
           bg="bg.subtle"
           variant="outline"
           onClick={() => {
-            saveCallback(value, secondValue);
+            saveCallback(value, valueNumber);
             setIsDirty(false);
           }}
           disabled={!isDirty}>

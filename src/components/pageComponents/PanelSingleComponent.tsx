@@ -33,7 +33,7 @@ export default function PanelSingleComponents({ componentType, onDragFunc }: Pan
     let value;
     let outputValue;
     if(componentType === NodeType.Policy) {
-      value = {policy: ''} as PolicyNodeValue;
+      value = {expression: ''} as PolicyNodeValue;
     }
     
     if(componentType === NodeType.Default) {
@@ -86,7 +86,7 @@ export default function PanelSingleComponents({ componentType, onDragFunc }: Pan
         label: item.label,
         type: componentType,
         subType: item.type,
-        expression: value,
+        policy: value,
         input: JSON.parse(JSON.stringify(outputValue)) as DefaultItem, // Deep copy 
         output: JSON.parse(JSON.stringify(outputValue)) as DefaultItem, // Deep copy
         parentOf: [],
@@ -97,7 +97,7 @@ export default function PanelSingleComponents({ componentType, onDragFunc }: Pan
         label: item.label,
         type: componentType,
         subType: item.type,
-        expression: value,
+        policy: value,
         parentOf: [],
       });
     }

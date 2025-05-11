@@ -11,6 +11,7 @@ interface RightPanelProps {
 }
 
 export default function RightPanel({node}: RightPanelProps) {
+  const debug = false;
   let hasValue = false;
   let nodeValueComponent;
 
@@ -60,18 +61,19 @@ export default function RightPanel({node}: RightPanelProps) {
           </Box>
         </>}
         
-        { /* Properties Viewer for debugging
-        <Heading size="sm" mt={4} mb={2}> {node.label} Properties:</Heading>
-        <Box 
-          borderRadius="md"
-          overflow="auto"
-        >
-          <JsonView 
-            data={node} 
-            shouldExpandNode={(level: number) => level < 1}
-          />
-        </Box>
-        */}
+        {debug &&
+        <>
+          <Heading size="sm" mt={4} mb={2}> {node.label} Properties:</Heading>
+          <Box 
+            borderRadius="md"
+            overflow="auto"
+          >
+            <JsonView 
+              data={node} 
+              shouldExpandNode={(level: number) => level < 1}
+            />
+          </Box>
+        </>}
       </Box>
     </Panel>
   );

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { Box, IconButton, Text } from "@chakra-ui/react";
 import { Handle, Position, useReactFlow } from "@xyflow/react";
 import { fontSize, minNodeHeight, minNodeWidth } from "../../constants/nodesDefinitions";
@@ -38,8 +39,8 @@ export default function BaseComponent({
   
   const [nodeHeight, setNodeHeight] = useState(minNodeHeight);
   const [nodeWidth, setNodeWidth] = useState(svgWidth);
-  
-  useEffect(() => {
+
+  const getWidthHeightFromParent = (): [number, number] => {
     if(parentOf){
       let w = svgWidth;
       let h = minNodeHeight;
@@ -48,15 +49,23 @@ export default function BaseComponent({
         w += child?.measured?.width || minNodeWidth + 40;
         h += child?.measured?.height || minNodeHeight + 40;
       }
-      setNodeWidth(w);
-      setNodeHeight(h);
+    return [w, h];
     }
+    return[nodeWidth, nodeHeight];
+  }
+  
+  useEffect(() => {
+    const [w, h] = getWidthHeightFromParent();
+    setNodeWidth(w);
+    setNodeHeight(h);
   }, [parentOf, getNode, svgWidth]);
 
   useEffect(() => {
     if (context?.font) {
       context.font = `${fontSize}px ${"Arial"}`;
-      setNodeWidth(Math.max(context.measureText(label).width + 50, minNodeWidth));
+      const [w] = getWidthHeightFromParent();
+      const newWidth = Math.max(context.measureText(label).width + 50, minNodeWidth);
+      setNodeWidth(Math.max(newWidth, w));
     }
 
   }, [context, label]);

@@ -18,7 +18,7 @@ export default function LeftPanel({ onDragFunc }: LeftPanelProps) {
         border: "1px solid black",
         padding: "10px",
         background: "white",
-        width: "fit-content",
+        width: "210px",
       }}
     >
       <Flex direction="column" gap={2}>
