@@ -102,7 +102,7 @@ export default function PanelActions() {
       resourceInputs,
       resourceResponseInputs,
       resourceParametersInputs,
-      resourceFieldInputs,
+      //resourceFieldInputs,
     };
 
     // Convert to JSON
@@ -139,7 +139,6 @@ function flattenRefs(obj: object): object {
 }
 
   // EXPORT OPENAPI FUNCTION
-  // [TODO]: The openAPI parser add the secuirity objectes: [{"bearerAuth": []}]
   async function exportOpenAPI() {
     // 1. Crate a clean copy of the OpenAPI
     //let finalOpenAPI:OpenAPI = await SwaggerParser.bundle(openAPI) as OpenAPI;
