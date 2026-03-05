@@ -1,8 +1,0 @@
-.react-flow__node:not(.selected) {
-  z-index: -1 !important;
-}
-
-.my-icon {
-  stroke: black;
-  stroke-width: 20;
-}
