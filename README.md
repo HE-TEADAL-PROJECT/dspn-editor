@@ -2,6 +2,8 @@
 
 A web-based diagram editor for Data Space Policy Networks (DSPN), built with Vue 3 and Vite.
 
+**Current version: 0.9.1**
+
 ## Prerequisites
 
 - **Node.js** v22 or later
@@ -82,7 +84,7 @@ The `-v` flag mounts a local directory into the container so your project files 
 docker run -d \
   -p 3001:3001 \
   -v /path/to/your/projects:/data/projects \
-  polimiis/dspn-editor:0.9.0
+  polimiis/dspn-editor:0.9.1
 ```
 
 ### Build the image locally
@@ -90,3 +92,20 @@ docker run -d \
 ```bash
 docker build -t dspn-editor .
 ```
+
+---
+
+## Usage
+
+When the application starts, no diagram is open by default. Use the Project Manager panel on the left to:
+
+- **Open an existing file** — double-click any `.xml` file in the project tree to open it in a new tab
+- **Create a new file** — use the Project Manager to create a new `.xml` file, then open it
+
+Each open diagram appears as a tab. Use the save button in the canvas toolbar to save changes.
+
+---
+
+## Authors
+
+Developed by the [RAISE group at POLIMI](https://isgroup-polimi.github.io) with huge support of Claude.
