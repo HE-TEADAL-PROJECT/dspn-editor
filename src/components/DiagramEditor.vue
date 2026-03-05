@@ -2,6 +2,7 @@
   <div class="editor">
     <header class="app-header">
       <span class="app-title">DSPN Editor</span>
+      <span class="app-version">v{{ appVersion }}</span>
     </header>
 
     <div class="editor-body">
@@ -20,7 +21,11 @@
             <span class="tab-title">{{ tabTitle(tab) }}</span>
             <span class="tab-close" @click.stop="closeTab(i)">×</span>
           </button>
-          <button class="tab-new" @click="addTab" title="New diagram">+</button>
+        </div>
+
+        <!-- Empty state -->
+        <div v-if="tabs.length === 0" class="no-diagram-placeholder">
+          <p>Open an existing file or create a new one using the Project Manager on the left.</p>
         </div>
 
         <!-- Tab panels -->
@@ -327,6 +332,13 @@
         </div>
       </aside>
     </div>
+
+    <footer class="app-footer">
+      <span>
+        Developed by the <a href="https://isgroup-polimi.github.io" target="_blank" rel="noopener">RAISE group at POLIMI</a>
+        with huge support of Claude
+      </span>
+    </footer>
   </div>
 </template>
 
@@ -334,6 +346,9 @@
 import { ref, computed } from 'vue'
 import ProjectManager from './ProjectManager.vue'
 import { writeFile, readFile } from '../api/projectApi.js'
+import { version } from '../../package.json'
+
+const appVersion = version
 
 const currentProjectRoot = ref(null)
 const projectFiles = ref([])
@@ -363,7 +378,7 @@ function createTab(fileName = null, items = [], conns = []) {
   }
 }
 
-const tabs = ref([createTab()])
+const tabs = ref([])
 const activeTabIndex = ref(0)
 const activeTab = computed(() => tabs.value[activeTabIndex.value])
 
@@ -385,13 +400,9 @@ async function closeTab(i) {
       await saveDiagram()
     }
   }
-  if (tabs.value.length === 1) {
-    tabs.value.splice(0, 1, createTab())
-    return
-  }
   tabs.value.splice(i, 1)
   if (activeTabIndex.value >= tabs.value.length) {
-    activeTabIndex.value = tabs.value.length - 1
+    activeTabIndex.value = Math.max(0, tabs.value.length - 1)
   }
 }
 
@@ -571,7 +582,7 @@ function openFromProject({ xmlText, fileName, serverPath }) {
   try {
     const parsed = parseXml(xmlText)
     const current = activeTab.value
-    if (current.placedItems.length === 0 && !current.fileName) {
+    if (current && current.placedItems.length === 0 && !current.fileName) {
       current.placedItems = parsed.items
       current.connections = parsed.conns
       current.fileName = fileName
@@ -1096,6 +1107,17 @@ function iconBgColor(type) {
 
 /* ── Canvas wrapper ──────────────────────────────────────────────────────── */
 
+.no-diagram-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 1rem;
+  text-align: center;
+  padding: 2rem;
+}
+
 .canvas-wrapper {
   flex: 1;
   display: flex;
@@ -1536,6 +1558,7 @@ function iconBgColor(type) {
   flex-shrink: 0;
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  justify-content: space-between;
 }
 
 .app-title {
@@ -1543,6 +1566,33 @@ function iconBgColor(type) {
   font-weight: 600;
   color: #e8edf3;
   letter-spacing: 0.04em;
+}
+
+.app-version {
+  font-size: 12px;
+  color: #a0b4cc;
+  letter-spacing: 0.03em;
+}
+
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  background: linear-gradient(90deg, #1a3a5c 0%, #2a5298 100%);
+  flex-shrink: 0;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #a0b4cc;
+}
+
+.app-footer a {
+  color: #c8d8ea;
+  text-decoration: none;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
 }
 
 .project-manager-panel {
