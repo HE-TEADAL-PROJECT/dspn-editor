@@ -2,7 +2,7 @@
 
 A web-based diagram editor for Data Space Policy Networks (DSPN), built with Vue 3 and Vite.
 
-**Current version: 0.9.1**
+**Current version: 0.9.2**
 
 ## Prerequisites
 
@@ -84,7 +84,7 @@ The `-v` flag mounts a local directory into the container so your project files 
 docker run -d \
   -p 3001:3001 \
   -v /path/to/your/projects:/data/projects \
-  polimiis/dspn-editor:0.9.1
+  polimiis/dspn-editor:0.9.2
 ```
 
 ### Build the image locally

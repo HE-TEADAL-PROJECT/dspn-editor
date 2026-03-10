@@ -20,6 +20,9 @@
         <button class="tb-btn" title="Open file" :disabled="!selectedEntry || selectedEntry.isDir" @click="onOpenFile(selectedEntry.path)">
           <i class="fa-regular fa-folder-open"></i>
         </button>
+        <button class="tb-btn" title="Export file to device" :disabled="!selectedEntry || selectedEntry.isDir" @click="exportSelected">
+          <i class="fa-solid fa-file-export"></i>
+        </button>
       </div>
       <div class="tb-row">
         <button class="tb-btn" title="Duplicate file" :disabled="!selectedEntry || selectedEntry.isDir" @click="duplicateSelected">
@@ -213,6 +216,22 @@ async function onRenameFile({ entry, newName }) {
     await refreshTree()
   } catch (e) {
     alert('Could not rename: ' + e.message)
+  }
+}
+
+async function exportSelected() {
+  if (!selectedEntry.value || selectedEntry.value.isDir) return
+  try {
+    const content = await readFile(selectedEntry.value.path)
+    const blob = new Blob([content], { type: 'application/xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = selectedEntry.value.name
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    alert('Could not export file: ' + e.message)
   }
 }
 

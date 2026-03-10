@@ -35,8 +35,21 @@
           v-show="activeTabIndex === i"
           class="canvas-wrapper"
         >
-          <div
-            class="canvas-container"
+          <div class="canvas-area">
+            <!-- View toggle -->
+            <div class="view-toggle" :class="tab.view === 'xml' ? 'view-toggle--light' : 'view-toggle--dark'">
+              <button :class="{ active: tab.view === 'diagram' }" @click.stop="tab.view = 'diagram'">Diagram</button>
+              <button :class="{ active: tab.view === 'xml' }" @click.stop="tab.view = 'xml'">XML</button>
+            </div>
+
+            <!-- XML view -->
+            <div v-if="tab.view === 'xml'" class="xml-view">
+              <pre class="xml-content">{{ buildXml(tab) }}</pre>
+            </div>
+
+            <div
+              v-show="tab.view === 'diagram'"
+              class="canvas-container"
             @dragover="onCanvasDragOver"
             @drop="e => onCanvasDrop(e, tab)"
             @click="e => onCanvasClick(e, tab)"
@@ -78,16 +91,18 @@
             <div class="canvas-toolbar" @click.stop @dragover.prevent>
               <span v-if="tab.serverPath" class="canvas-filename">{{ tab.serverPath }}</span>
               <span v-if="tab.isConnecting" class="canvas-connecting">select second item to connect</span>
-              <button class="btn-canvas-undo" :disabled="!tab.undoStack.length" @click="undo(tab)" title="Undo">
-                <i class="fas fa-rotate-left"></i>
-              </button>
-              <button class="btn-canvas-undo" :disabled="!tab.redoStack.length" @click="redo(tab)" title="Redo">
-                <i class="fas fa-rotate-right"></i>
-              </button>
+              <template v-if="tab.view === 'diagram'">
+                <button class="btn-canvas-undo" :disabled="!tab.undoStack.length" @click="undo(tab)" title="Undo">
+                  <i class="fas fa-rotate-left"></i>
+                </button>
+                <button class="btn-canvas-undo" :disabled="!tab.redoStack.length" @click="redo(tab)" title="Redo">
+                  <i class="fas fa-rotate-right"></i>
+                </button>
+              </template>
               <button class="btn-canvas-save" @click="saveDiagram">
                 <i class="fas fa-floppy-disk"></i> Save
               </button>
-              <button class="btn-canvas-clear" @click="promptClear(tab)">
+              <button v-if="tab.view === 'diagram'" class="btn-canvas-clear" @click="promptClear(tab)">
                 <i class="fas fa-trash"></i> Clear
               </button>
             </div>
@@ -102,6 +117,24 @@
             </div>
 
             <!-- Connection type modal -->
+            <!-- Invalid connection modal -->
+            <div v-if="tab.invalidConnection" class="conn-modal-overlay">
+              <div class="conn-modal conn-modal--error">
+                <p class="conn-modal-title">Relation not admissible</p>
+                <p class="conn-modal-subtitle">
+                  A <strong>{{ tab.invalidConnection.fromType }}</strong> cannot be connected to a <strong>{{ tab.invalidConnection.toType }}</strong>.
+                </p>
+                <p class="conn-modal-subtitle" v-if="tab.invalidConnection.admissible.length > 0">Admissible relations from <strong>{{ tab.invalidConnection.fromType }}</strong>:</p>
+                <ul v-if="tab.invalidConnection.admissible.length > 0" class="conn-modal-list">
+                  <li v-for="r in tab.invalidConnection.admissible" :key="r.to">
+                    → <strong>{{ r.to }}</strong> ({{ r.types.join(', ') }})
+                  </li>
+                </ul>
+                <p v-else class="conn-modal-subtitle">No admissible relations exist from this element.</p>
+                <button class="cancel" @click="tab.invalidConnection = null">Close</button>
+              </div>
+            </div>
+
             <div v-if="tab.pendingConnection" class="conn-modal-overlay">
               <div class="conn-modal">
                 <p>Select connection type</p>
@@ -161,6 +194,7 @@
               </div>
             </div>
           </div>
+          </div><!-- end canvas-area -->
 
           <!-- Properties panel -->
           <div class="properties-panel">
@@ -199,7 +233,18 @@
               </div>
               <div v-if="tab.placedItems[tab.selectedItem].expression !== undefined" class="property">
                 <span class="label">Expression:</span>
-                <input v-model="tab.placedItems[tab.selectedItem].expression" type="text" class="input-value" placeholder="Expression" @focus="pushUndo(tab)" @change="tab.isDirty = true">
+                <input v-model="tab.placedItems[tab.selectedItem].expression" type="text" class="input-value input-value--fill" placeholder="Expression" @focus="pushUndo(tab)" @change="tab.isDirty = true">
+              </div>
+            </div>
+            <div v-else-if="tab.diagramSelected" class="properties-content">
+              <h4>Diagram</h4>
+              <div class="property">
+                <span class="label">Name:</span>
+                <input v-model="tab.diagramName" type="text" class="input-value" placeholder="Diagram name" @change="tab.isDirty = true">
+              </div>
+              <div class="property property--fill">
+                <span class="label">Description:</span>
+                <textarea v-model="tab.diagramDescription" class="input-value input-textarea" placeholder="Description" @change="tab.isDirty = true"></textarea>
               </div>
             </div>
             <div v-else class="properties-empty">
@@ -294,6 +339,12 @@
               </div>
               <span class="label">Usage</span>
             </div>
+            <div class="palette-subsubsection">
+              <div class="icon" draggable="true" data-type="authorization" data-icon="shield-halved" @dragstart="onDragStart">
+                <i class="fas fa-shield-halved"></i>
+              </div>
+              <span class="label">Authorization</span>
+            </div>
           </div>
         </div>
         <div class="palette-section palette-section--exposed">
@@ -367,6 +418,7 @@ function createTab(fileName = null, items = [], conns = []) {
     connectFirst: null,
     selectedItem: null,
     pendingConnection: null,
+    invalidConnection: null,
     draggingIndex: null,
     hasDragged: false,
     selectedConnection: null,
@@ -375,6 +427,10 @@ function createTab(fileName = null, items = [], conns = []) {
     isDirty: false,
     undoStack: [],
     redoStack: [],
+    view: 'diagram',
+    diagramSelected: true,
+    diagramName: '',
+    diagramDescription: '',
   }
 }
 
@@ -447,18 +503,24 @@ function redo(tab) {
 // ── Connection rules ─────────────────────────────────────────────────────────
 
 const attributeTypes = ['user-attributes', 'request-attributes', 'system-attributes']
-const transformationTypes = ['filter', 'projection', 'encryption', 'anonymization', 'rename', 'usage']
-const policiesTypes = ['policy-doc', ...transformationTypes]
+const transformationTypes = ['filter', 'projection', 'encryption', 'anonymization', 'rename']
+const usageTypes = ['usage', 'authorization']
+const policiesTypes = ['policy-doc', ...transformationTypes, ...usageTypes]
 
 const connectionRules = {
   'data-product:data-source':          ['composed'],
   'data-source:exposed-data':          ['flow'],
   'shared-data-product:exposed-data':  ['composed'],
-  ...Object.fromEntries(policiesTypes.map(t => [`data-source:${t}`, ['flow']])),
-  ...Object.fromEntries(policiesTypes.map(t => [`${t}:exposed-data`, ['flow']])),
+  ...Object.fromEntries(transformationTypes.map(t => [`data-source:${t}`, ['flow']])),
+  'data-source:policy-doc':            ['flow'],
+  ...Object.fromEntries(transformationTypes.map(t => [`${t}:exposed-data`, ['flow']])),
   'policy-doc:exposed-data':           ['flow', 'assigned'],
+  'policy-doc:policy-doc':             ['flow'],
+  ...Object.fromEntries(transformationTypes.map(t => [`${t}:policy-doc`, ['flow']])),
+  ...Object.fromEntries(transformationTypes.map(t => [`policy-doc:${t}`, ['flow']])),
+  ...Object.fromEntries(usageTypes.map(t => [`${t}:exposed-data`, ['assigned']])),
   ...Object.fromEntries(
-    policiesTypes.flatMap(a => policiesTypes.filter(b => b !== a).map(b => [`${a}:${b}`, ['flow']]))
+    transformationTypes.flatMap(a => transformationTypes.filter(b => b !== a).map(b => [`${a}:${b}`, ['flow']]))
   ),
   ...Object.fromEntries(
     attributeTypes.flatMap(a => transformationTypes.map(t => [`${a}:${t}`, ['access']]))
@@ -468,7 +530,27 @@ const connectionRules = {
 function allowedTypes(fromIndex, toIndex, tab) {
   const fromType = tab.placedItems[fromIndex].type
   const toType   = tab.placedItems[toIndex].type
-  if (isJunction(fromType) || isJunction(toType)) return ['assigned']
+
+  if (isJunction(toType)) {
+    // A → junction: derive rules from what the junction already sends to
+    const destinations = tab.connections
+      .filter(c => c.from === toIndex && !isJunction(tab.placedItems[c.to].type))
+      .map(c => tab.placedItems[c.to].type)
+    if (destinations.length === 0) return ['flow', 'assigned', 'access', 'composed']
+    const sets = destinations.map(d => connectionRules[`${fromType}:${d}`] ?? [])
+    return sets.reduce((acc, s) => acc.filter(t => s.includes(t)), sets[0] ?? [])
+  }
+
+  if (isJunction(fromType)) {
+    // junction → B: derive rules from what feeds into the junction
+    const sources = tab.connections
+      .filter(c => c.to === fromIndex && !isJunction(tab.placedItems[c.from].type))
+      .map(c => tab.placedItems[c.from].type)
+    if (sources.length === 0) return ['flow', 'assigned', 'access', 'composed']
+    const sets = sources.map(s => connectionRules[`${s}:${toType}`] ?? [])
+    return sets.reduce((acc, s) => acc.filter(t => s.includes(t)), sets[0] ?? [])
+  }
+
   return connectionRules[`${fromType}:${toType}`] ?? []
 }
 
@@ -570,7 +652,11 @@ function parseXml(xmlString) {
     })
   })
 
-  return { items, conns }
+  const diagramEl = doc.querySelector('dspn-diagram')
+  const diagramName = diagramEl?.getAttribute('name') ?? ''
+  const diagramDescription = diagramEl?.getAttribute('description') ?? ''
+
+  return { items, conns, diagramName, diagramDescription }
 }
 
 function openFromProject({ xmlText, fileName, serverPath }) {
@@ -587,9 +673,13 @@ function openFromProject({ xmlText, fileName, serverPath }) {
       current.connections = parsed.conns
       current.fileName = fileName
       current.serverPath = serverPath
+      current.diagramName = parsed.diagramName
+      current.diagramDescription = parsed.diagramDescription
     } else {
       const tab = createTab(fileName, parsed.items, parsed.conns)
       tab.serverPath = serverPath
+      tab.diagramName = parsed.diagramName
+      tab.diagramDescription = parsed.diagramDescription
       tabs.value.push(tab)
       activeTabIndex.value = tabs.value.length - 1
     }
@@ -692,15 +782,21 @@ function buildXml(tab) {
     `    <${escape(conn.type)} from="${conn.from}" to="${conn.to}"/>`
   ).join('\n')
 
+  const diagramAttrs = [
+    ` version="0.1"`,
+    tab.diagramName ? ` name="${escape(tab.diagramName)}"` : '',
+    tab.diagramDescription ? ` description="${escape(tab.diagramDescription)}"` : '',
+  ].join('')
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<diagram>
+<dspn-diagram${diagramAttrs}>
   <elements>
 ${elementsXml}
   </elements>
   <connections>
 ${connectionsXml}
   </connections>
-</diagram>`
+</dspn-diagram>`
 }
 
 // ── Canvas interactions ───────────────────────────────────────────────────────
@@ -729,6 +825,7 @@ function onCanvasDrop(event, tab) {
     if (type === 'data-product')        { item.name = `Data Product ${count(type)}`;        item.endpoint = '' }
     if (type === 'exposed-data')        { item.name = `Exposed Data ${count(type)}` }
     if (type === 'policy-doc')          { item.name = `Policy Doc ${count(type)}`;          item.filename = '' }
+    if (type === 'authorization')       { item.name = `Authorization ${count(type)}`;  item.expression = '' }
     if (type === 'user-attributes')     { item.name = `User Attributes ${count(type)}` }
     if (type === 'request-attributes')  { item.name = `Request Attributes ${count(type)}` }
     if (type === 'system-attributes')   { item.name = `System Attributes ${count(type)}` }
@@ -799,11 +896,18 @@ function onItemClick(index, tab) {
       if (!alreadyConnected) {
         if (isJunction(tab.placedItems[a].type) && tab.connections.some(c => c.from === a)) return
         const allowed = allowedTypes(a, b, tab)
-        if (allowed.length === 1) {
+        if (allowed.length === 0) {
+          const fromType = tab.placedItems[a].type
+          const toType = tab.placedItems[b].type
+          const admissible = Object.entries(connectionRules)
+            .filter(([key]) => key.startsWith(fromType + ':'))
+            .map(([key, types]) => ({ to: key.split(':')[1], types }))
+          tab.invalidConnection = { fromType, toType, admissible }
+        } else if (allowed.length === 1) {
           pushUndo(tab)
           tab.connections.push({ from: a, to: b, type: allowed[0] })
           tab.isDirty = true
-        } else if (allowed.length > 1) {
+        } else {
           tab.pendingConnection = { from: a, to: b, allowed }
         }
       }
@@ -814,6 +918,7 @@ function onItemClick(index, tab) {
   }
   tab.selectedConnection = null
   tab.selectedItem = tab.selectedItem === index ? null : index
+  tab.diagramSelected = false
 }
 
 function startConnection(index, tab) {
@@ -852,11 +957,13 @@ function onCanvasClick(event, tab) {
     if (distToSegment(mx, my, pts.x1, pts.y1, pts.x2, pts.y2) < 6) {
       tab.selectedConnection = i
       tab.selectedItem = null
+      tab.diagramSelected = false
       return
     }
   }
   tab.selectedConnection = null
   tab.selectedItem = null
+  tab.diagramSelected = true
 }
 
 function deleteConnection(tab, index) {
@@ -886,7 +993,7 @@ function iconColor(type) {
   const colors = {
     'data-source': '#6C8EBF', 'data-product': '#6C8EBF',
     'policy-doc': '#D6B656', 'usage': '#D6B656', 'filter': '#D6B656',
-    'projection': '#D6B656', 'encryption': '#D6B656', 'anonymization': '#D6B656', 'rename': '#D6B656',
+    'projection': '#D6B656', 'encryption': '#D6B656', 'anonymization': '#D6B656', 'rename': '#D6B656', 'authorization': '#D6B656',
     'exposed-data': '#9673A6', 'shared-data-product': '#9673A6',
     'user-attributes': '#82B366', 'request-attributes': '#82B366', 'system-attributes': '#82B366',
   }
@@ -897,7 +1004,7 @@ function iconBgColor(type) {
   const colors = {
     'data-source': '#DAE8FC', 'data-product': '#DAE8FC',
     'policy-doc': '#FFF2CC', 'usage': '#FFF2CC', 'filter': '#FFF2CC',
-    'projection': '#FFF2CC', 'encryption': '#FFF2CC', 'anonymization': '#FFF2CC', 'rename': '#FFF2CC',
+    'projection': '#FFF2CC', 'encryption': '#FFF2CC', 'anonymization': '#FFF2CC', 'rename': '#FFF2CC', 'authorization': '#FFF2CC',
     'exposed-data': '#E1D5E7', 'shared-data-product': '#E1D5E7',
     'user-attributes': '#D5E8D4', 'request-attributes': '#D5E8D4', 'system-attributes': '#D5E8D4',
   }
@@ -1107,6 +1214,82 @@ function iconBgColor(type) {
 
 /* ── Canvas wrapper ──────────────────────────────────────────────────────── */
 
+.canvas-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-toggle {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  gap: 3px;
+  border-radius: 5px;
+  padding: 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: background 0.2s;
+}
+
+.view-toggle--dark {
+  background: #1a3a5c;
+}
+
+.view-toggle--light {
+  background: #e8edf3;
+}
+
+.view-toggle button {
+  padding: 4px 14px;
+  font-size: 12px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-toggle--dark button {
+  color: #a0b8d0;
+}
+
+.view-toggle--dark button.active {
+  background: #2a5298;
+  color: #fff;
+}
+
+.view-toggle--light button {
+  color: #555;
+}
+
+.view-toggle--light button.active {
+  background: #fff;
+  color: #2a5298;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.xml-view {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  background: #1e1e2e;
+  border-radius: 6px;
+  padding: 1rem 1rem 3.5rem 1rem;
+}
+
+.xml-content {
+  margin: 0;
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 13px;
+  color: #cdd6f4;
+  white-space: pre;
+  line-height: 1.6;
+}
+
 .no-diagram-placeholder {
   flex: 1;
   display: flex;
@@ -1129,8 +1312,8 @@ function iconBgColor(type) {
 }
 
 .canvas-container {
-  flex: 1;
-  position: relative;
+  position: absolute;
+  inset: 0;
   background: white;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -1238,6 +1421,15 @@ function iconBgColor(type) {
   overflow-y: auto;
   flex-shrink: 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.properties-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .properties-content h4 {
@@ -1269,8 +1461,28 @@ function iconBgColor(type) {
   border-radius: 3px;
   padding: 0.2rem 0.4rem;
   font-size: 0.75rem;
-  width: 100px;
+  width: 200px;
   background: white;
+}
+
+.property--fill {
+  flex: 1;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.input-value--fill {
+  flex: 1;
+  width: auto;
+  box-sizing: border-box;
+}
+
+.input-textarea {
+  flex: 1;
+  resize: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  min-height: 0;
 }
 
 .properties-empty {
@@ -1396,6 +1608,31 @@ function iconBgColor(type) {
 
 .conn-modal button.cancel:hover {
   background: #fdf0f0;
+}
+
+.conn-modal--error {
+  min-width: 260px;
+  max-width: 360px;
+}
+
+.conn-modal-title {
+  font-size: 0.95rem !important;
+  color: #c0392b !important;
+}
+
+.conn-modal-subtitle {
+  font-weight: 400 !important;
+  color: #555 !important;
+}
+
+.conn-modal-list {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.8rem;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* ── Connection overlays ─────────────────────────────────────────────────── */
