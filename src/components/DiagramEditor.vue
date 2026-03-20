@@ -188,7 +188,7 @@
                 <button v-if="tab.selectedItem === index" class="connect-start-btn" @click.stop="startConnection(index, tab)">
                   <i class="fas fa-arrow-right"></i>
                 </button>
-                <button v-if="tab.selectedItem === index && item.type === 'policy-doc' && item.filename" class="open-policy-btn" @click.stop="openPolicyDoc(item)">
+                <button v-if="tab.selectedItem === index && (item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="open-policy-btn" @click.stop="openPolicyDoc(item)">
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
@@ -216,7 +216,7 @@
                 <span class="label">Name:</span>
                 <input v-model="tab.placedItems[tab.selectedItem].name" type="text" class="input-value" placeholder="Name" @focus="pushUndo(tab)" @change="tab.isDirty = true">
               </div>
-              <div v-if="tab.placedItems[tab.selectedItem].type === 'policy-doc'" class="property">
+              <div v-if="tab.placedItems[tab.selectedItem].type === 'policy-doc' || tab.placedItems[tab.selectedItem].type === 'transformation-policy'" class="property">
                 <span class="label">Filename:</span>
                 <select v-model="tab.placedItems[tab.selectedItem].filename" class="input-value" @mousedown="pushUndo(tab)" @change="tab.isDirty = true">
                   <option value="">— none —</option>
@@ -295,14 +295,25 @@
           </div>
         </div>
         <div class="palette-section palette-subsection--transformation">
-          <h4>Policies</h4>
+          <h4>Policy Doc</h4>
           <div class="transformation-grid">
             <div class="palette-subsubsection">
               <div class="icon" draggable="true" data-type="policy-doc" data-icon="file-contract" @dragstart="onDragStart">
                 <i class="fas fa-file-contract"></i>
               </div>
-              <span class="label">Policy Doc</span>
+              <span class="label">Data Usage Policy</span>
             </div>
+            <div class="palette-subsubsection">
+              <div class="icon" draggable="true" data-type="transformation-policy" data-icon="file-lines" @dragstart="onDragStart">
+                <i class="fas fa-file-lines"></i>
+              </div>
+              <span class="label">Transformation Policy</span>
+            </div>
+          </div>
+        </div>
+        <div class="palette-section palette-subsection--transformation">
+          <h4>Policies</h4>
+          <div class="transformation-grid">
             <div class="palette-subsubsection">
               <div class="icon" draggable="true" data-type="filter" data-icon="filter" @dragstart="onDragStart">
                 <i class="fas fa-filter"></i>
@@ -505,19 +516,26 @@ function redo(tab) {
 const attributeTypes = ['user-attributes', 'request-attributes', 'system-attributes']
 const transformationTypes = ['filter', 'projection', 'encryption', 'anonymization', 'rename']
 const usageTypes = ['usage', 'authorization']
-const policiesTypes = ['policy-doc', ...transformationTypes, ...usageTypes]
+const policiesTypes = ['policy-doc', 'transformation-policy', ...transformationTypes, ...usageTypes]
 
 const connectionRules = {
   'data-product:data-source':          ['composed'],
   'data-source:exposed-data':          ['flow'],
   'shared-data-product:exposed-data':  ['composed'],
   ...Object.fromEntries(transformationTypes.map(t => [`data-source:${t}`, ['flow']])),
-  'data-source:policy-doc':            ['flow'],
+  // Rule 1: data-source → transformation-policy (Transformation Policy Doc)
+  'data-source:transformation-policy':    ['flow'],
   ...Object.fromEntries(transformationTypes.map(t => [`${t}:exposed-data`, ['flow']])),
-  'policy-doc:exposed-data':           ['flow', 'assigned'],
-  'policy-doc:policy-doc':             ['flow'],
-  ...Object.fromEntries(transformationTypes.map(t => [`${t}:policy-doc`, ['flow']])),
-  ...Object.fromEntries(transformationTypes.map(t => [`policy-doc:${t}`, ['flow']])),
+  // Rule 5: transformation-policy → exposed-data
+  'transformation-policy:exposed-data':   ['flow'],
+  // Rule 2: transformation-policy → transformation-policy (no loops enforced at placement)
+  'transformation-policy:transformation-policy': ['flow'],
+  // Rule 3: transformation-policy → each transformation type
+  ...Object.fromEntries(transformationTypes.map(t => [`transformation-policy:${t}`, ['flow']])),
+  // Rule 4: each transformation type → transformation-policy
+  ...Object.fromEntries(transformationTypes.map(t => [`${t}:transformation-policy`, ['flow']])),
+  // Rule 6: policy-doc (Data Usage Policy Doc) → exposed-data with assigned
+  'policy-doc:exposed-data':              ['assigned'],
   ...Object.fromEntries(usageTypes.map(t => [`${t}:exposed-data`, ['assigned']])),
   ...Object.fromEntries(
     transformationTypes.flatMap(a => transformationTypes.filter(b => b !== a).map(b => [`${a}:${b}`, ['flow']]))
@@ -824,7 +842,8 @@ function onCanvasDrop(event, tab) {
     if (type === 'data-source')         { item.name = `Data Source ${count(type)}`;         item.path = '' }
     if (type === 'data-product')        { item.name = `Data Product ${count(type)}`;        item.endpoint = '' }
     if (type === 'exposed-data')        { item.name = `Exposed Data ${count(type)}` }
-    if (type === 'policy-doc')          { item.name = `Policy Doc ${count(type)}`;          item.filename = '' }
+    if (type === 'policy-doc')              { item.name = `Data Usage Policy ${count(type)}`;      item.filename = '' }
+    if (type === 'transformation-policy')   { item.name = `Transformation Policy ${count(type)}`; item.filename = '' }
     if (type === 'authorization')       { item.name = `Authorization ${count(type)}`;  item.expression = '' }
     if (type === 'user-attributes')     { item.name = `User Attributes ${count(type)}` }
     if (type === 'request-attributes')  { item.name = `Request Attributes ${count(type)}` }
@@ -992,7 +1011,7 @@ function deleteItem(index, tab) {
 function iconColor(type) {
   const colors = {
     'data-source': '#6C8EBF', 'data-product': '#6C8EBF',
-    'policy-doc': '#D6B656', 'usage': '#D6B656', 'filter': '#D6B656',
+    'policy-doc': '#D6B656', 'transformation-policy': '#D6B656', 'usage': '#D6B656', 'filter': '#D6B656',
     'projection': '#D6B656', 'encryption': '#D6B656', 'anonymization': '#D6B656', 'rename': '#D6B656', 'authorization': '#D6B656',
     'exposed-data': '#9673A6', 'shared-data-product': '#9673A6',
     'user-attributes': '#82B366', 'request-attributes': '#82B366', 'system-attributes': '#82B366',
@@ -1003,7 +1022,7 @@ function iconColor(type) {
 function iconBgColor(type) {
   const colors = {
     'data-source': '#DAE8FC', 'data-product': '#DAE8FC',
-    'policy-doc': '#FFF2CC', 'usage': '#FFF2CC', 'filter': '#FFF2CC',
+    'policy-doc': '#FFF2CC', 'transformation-policy': '#FFF2CC', 'usage': '#FFF2CC', 'filter': '#FFF2CC',
     'projection': '#FFF2CC', 'encryption': '#FFF2CC', 'anonymization': '#FFF2CC', 'rename': '#FFF2CC', 'authorization': '#FFF2CC',
     'exposed-data': '#E1D5E7', 'shared-data-product': '#E1D5E7',
     'user-attributes': '#D5E8D4', 'request-attributes': '#D5E8D4', 'system-attributes': '#D5E8D4',
@@ -1042,19 +1061,19 @@ function iconBgColor(type) {
   border-radius: 6px;
   background: #f5f0fa;
   box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-  padding: 0.4rem;
+  padding: 0.25rem;
   width: 140px;
   flex-shrink: 0;
   background: white;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.05rem;
   overflow-y: auto;
 }
 
 .palette-section {
   border-top: 1px solid #ddd;
-  padding-top: 0.2rem;
+  padding-top: 0.1rem;
 }
 
 .palette-section:first-child {
@@ -1068,8 +1087,8 @@ function iconBgColor(type) {
 .palette-section--attributes .icon  { color: #82B366; }
 
 .palette-section h4 {
-  margin: 0 0 0.15rem;
-  font-size: 0.7rem;
+  margin: 0 0 0.05rem;
+  font-size: 0.65rem;
   color: #333;
   font-weight: 600;
 }
@@ -1077,35 +1096,35 @@ function iconBgColor(type) {
 .transformation-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0;
 }
 
 .palette-subsubsection {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.05rem 0;
+  gap: 0.2rem;
+  padding: 0;
 }
 
 .palette-subsubsection .label {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: #555;
-  line-height: 1.2;
+  line-height: 1.1;
   white-space: nowrap;
 }
 
 .icon {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   cursor: grab;
-  padding: 0.2rem;
+  padding: 0.15rem;
   border-radius: 4px;
   transition: background 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.2rem;
+  height: 1.2rem;
   color: #333;
   flex-shrink: 0;
 }
