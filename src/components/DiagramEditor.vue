@@ -225,11 +225,37 @@
               </div>
               <div v-if="tab.placedItems[tab.selectedItem].type === 'data-source'" class="property">
                 <span class="label">Path:</span>
-                <input v-model="tab.placedItems[tab.selectedItem].path" type="text" class="input-value" placeholder="Path" @focus="pushUndo(tab)" @change="tab.isDirty = true">
+                <select v-if="openAPIfile" v-model="tab.placedItems[tab.selectedItem].path" class="input-value" @mousedown="pushUndo(tab)" @change="tab.isDirty = true; refreshConnectedRequestAttributes(tab, tab.selectedItem)">
+                  <option value="">— select path —</option>
+                  <option v-for="p in Object.keys(openAPIfile.paths ?? {}).filter(p => openAPIfile.paths[p].get)" :key="p" :value="p">{{ p }}</option>
+                </select>
+                <span v-else class="prop-no-api">No OpenAPI spec loaded</span>
+              </div>
+              <div v-if="tab.placedItems[tab.selectedItem].type === 'data-product'" class="property">
+                <span class="label">OpenAPI file:</span>
+                <input v-model="tab.placedItems[tab.selectedItem].openAPIUrl" type="text" class="input-value" placeholder="URL" @focus="pushUndo(tab)" @change="tab.isDirty = true">
+                <button class="prop-load-btn" title="Inspect OpenAPI file" :disabled="!tab.placedItems[tab.selectedItem].openAPIUrl" @click="openEndpoint(tab.placedItems[tab.selectedItem].openAPIUrl)">Inspect</button>
+                <button class="prop-load-btn" title="Load OpenAPI file" :disabled="!tab.placedItems[tab.selectedItem].openAPIUrl" @click="loadEndpoint(tab.placedItems[tab.selectedItem].openAPIUrl)">Load</button>
               </div>
               <div v-if="tab.placedItems[tab.selectedItem].type === 'data-product'" class="property">
                 <span class="label">Endpoint:</span>
                 <input v-model="tab.placedItems[tab.selectedItem].endpoint" type="text" class="input-value" placeholder="URL" @focus="pushUndo(tab)" @change="tab.isDirty = true">
+              </div>
+              <div v-if="tab.placedItems[tab.selectedItem].type === 'shared-data-product'" class="property">
+                <span class="label">Endpoint:</span>
+                <input v-model="tab.placedItems[tab.selectedItem].endpoint" type="text" class="input-value" placeholder="URL" @focus="pushUndo(tab)" @change="tab.isDirty = true">
+              </div>
+              <div v-if="['user-attributes','system-attributes','request-attributes'].includes(tab.placedItems[tab.selectedItem].type)" class="property property--fill">
+                <span class="label">Attributes:</span>
+                <textarea
+                  v-model="tab.placedItems[tab.selectedItem].attributes"
+                  class="input-value input-value--fill input-value--json"
+                  :class="{ 'input-value--json-invalid': !isValidJson(tab.placedItems[tab.selectedItem].attributes) && tab.placedItems[tab.selectedItem].attributes }"
+                  placeholder='["name1", "name2"]'
+                  spellcheck="false"
+                  @focus="pushUndo(tab)"
+                  @change="tab.isDirty = true"
+                ></textarea>
               </div>
               <div v-if="tab.placedItems[tab.selectedItem].expression !== undefined" class="property">
                 <span class="label">Expression:</span>
@@ -298,14 +324,14 @@
           <h4>Policy Doc</h4>
           <div class="transformation-grid">
             <div class="palette-subsubsection">
-              <div class="icon" draggable="true" data-type="policy-doc" data-icon="file-contract" @dragstart="onDragStart">
-                <i class="fas fa-file-contract"></i>
+              <div class="icon" draggable="true" data-type="policy-doc" data-icon="file-shield" @dragstart="onDragStart">
+                <i class="fas fa-file-shield"></i>
               </div>
               <span class="label">Data Usage Policy</span>
             </div>
             <div class="palette-subsubsection">
-              <div class="icon" draggable="true" data-type="transformation-policy" data-icon="file-lines" @dragstart="onDragStart">
-                <i class="fas fa-file-lines"></i>
+              <div class="icon" draggable="true" data-type="transformation-policy" data-icon="file-pen" @dragstart="onDragStart">
+                <i class="fas fa-file-pen"></i>
               </div>
               <span class="label">Transformation Policy</span>
             </div>
@@ -362,21 +388,21 @@
           <h4>Exposed Data</h4>
           <div class="transformation-grid">
             <div class="palette-subsubsection">
-              <div class="icon" draggable="true" data-type="exposed-data" data-icon="share" @dragstart="onDragStart">
-                <i class="fas fa-share"></i>
-              </div>
-              <span class="label">Exposed Data</span>
-            </div>
-            <div class="palette-subsubsection">
               <div class="icon" draggable="true" data-type="shared-data-product" data-icon="share-nodes" @dragstart="onDragStart">
                 <i class="fas fa-share-nodes"></i>
               </div>
               <span class="label">Shared Data Product</span>
             </div>
+            <div class="palette-subsubsection">
+              <div class="icon" draggable="true" data-type="exposed-data" data-icon="share" @dragstart="onDragStart">
+                <i class="fas fa-share"></i>
+              </div>
+              <span class="label">Exposed Data</span>
+            </div>
           </div>
         </div>
         <div class="palette-section">
-          <h4>Relations</h4>
+          <h4>Junctions</h4>
           <div class="transformation-grid">
             <div class="palette-subsubsection">
               <div class="icon" draggable="true" data-type="and-junction" data-icon="junction-and" @dragstart="onDragStart">
@@ -414,6 +440,7 @@ const appVersion = version
 
 const currentProjectRoot = ref(null)
 const projectFiles = ref([])
+const openAPIfile = ref(null)
 
 // ── Tab management ──────────────────────────────────────────────────────────
 
@@ -450,7 +477,8 @@ const activeTabIndex = ref(0)
 const activeTab = computed(() => tabs.value[activeTabIndex.value])
 
 function tabTitle(tab) {
-  return (tab.isDirty ? '● ' : '') + (tab.fileName ? tab.fileName.split('/').pop() : 'New Diagram')
+  const name = tab.serverPath ?? tab.fileName ?? 'New Diagram'
+  return (tab.isDirty ? '● ' : '') + name
 }
 
 function addTab() {
@@ -520,6 +548,7 @@ const policiesTypes = ['policy-doc', 'transformation-policy', ...transformationT
 
 const connectionRules = {
   'data-product:data-source':          ['composed'],
+  'data-source:request-attributes':    ['composed'],
   'data-source:exposed-data':          ['flow'],
   'shared-data-product:exposed-data':  ['composed'],
   ...Object.fromEntries(transformationTypes.map(t => [`data-source:${t}`, ['flow']])),
@@ -640,6 +669,17 @@ function confirmClear(tab) {
 }
 
 
+const xmlTagToType = {
+  'data-usage-policy-doc':    'policy-doc',
+  'transformation-policy-doc': 'transformation-policy',
+}
+const typeToXmlTag = {
+  'policy-doc':           'data-usage-policy-doc',
+  'transformation-policy': 'transformation-policy-doc',
+}
+function typeToTag(type) { return typeToXmlTag[type] ?? type }
+function tagToType(tag)  { return xmlTagToType[tag]  ?? tag  }
+
 function parseXml(xmlString) {
   const parser = new DOMParser()
   const doc = parser.parseFromString(xmlString, 'application/xml')
@@ -648,7 +688,7 @@ function parseXml(xmlString) {
   const items = []
   doc.querySelectorAll('elements > *').forEach(el => {
     const item = {
-      type: el.tagName,
+      type: tagToType(el.tagName),
       iconName: el.getAttribute('icon'),
       x: parseFloat(el.getAttribute('x')),
       y: parseFloat(el.getAttribute('y')),
@@ -657,6 +697,9 @@ function parseXml(xmlString) {
       if (!['id', 'icon', 'x', 'y'].includes(attr.name)) {
         item[attr.name] = attr.value
       }
+    }
+    if (item.type === 'data-source') {
+      item.path = item.path ?? ''
     }
     items.push(item)
   })
@@ -701,6 +744,7 @@ function openFromProject({ xmlText, fileName, serverPath }) {
       tabs.value.push(tab)
       activeTabIndex.value = tabs.value.length - 1
     }
+    autoLoadOpenAPI(parsed.items)
   } catch {
     alert('Invalid XML file.')
   }
@@ -708,6 +752,82 @@ function openFromProject({ xmlText, fileName, serverPath }) {
 
 function onFilesChanged(files) {
   projectFiles.value = files
+}
+
+function refreshConnectedRequestAttributes(tab, dataSourceIndex) {
+  tab.connections
+    .filter(c => c.from === dataSourceIndex && tab.placedItems[c.to]?.type === 'request-attributes')
+    .forEach(c => populateRequestAttributes(tab, dataSourceIndex, c.to))
+}
+
+function populateRequestAttributes(tab, fromIndex, toIndex) {
+  const from = tab.placedItems[fromIndex]
+  const to   = tab.placedItems[toIndex]
+  if (from.type !== 'data-source' || to.type !== 'request-attributes') return
+  if (!openAPIfile.value || !from.path) return
+  const parameters = openAPIfile.value.paths?.[from.path]?.get?.parameters
+  if (!parameters?.length) return
+  to.attributes = JSON.stringify(
+    parameters.map(p => ({
+      name: p.name,
+      in: p.in,
+      required: p.required ?? false,
+    })),
+    null, 2
+  )
+}
+
+function isValidJson(text) {
+  if (!text) return true
+  try {
+    const parsed = JSON.parse(text)
+    return Array.isArray(parsed) && parsed.every(e => typeof e === 'string')
+  } catch { return false }
+}
+
+function openEndpoint(url) {
+  if (url) window.open(url, '_blank')
+}
+
+async function fetchOpenAPI(url) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+  const text = await res.text()
+  let data
+  try {
+    data = JSON.parse(text)
+  } catch {
+    throw new Error('File is not valid JSON. Only JSON-format OpenAPI files are supported.')
+  }
+  if (!data.openapi || !String(data.openapi).startsWith('3.')) {
+    throw new Error(`Not an OpenAPI 3.0 document (found: ${data.openapi ?? 'no "openapi" field'}).`)
+  }
+  return data
+}
+
+async function loadEndpoint(url) {
+  if (!url) return
+  if (openAPIfile.value !== null) {
+    const proceed = confirm('An OpenAPI spec is already loaded. Loading a new one will replace it. Continue?')
+    if (!proceed) return
+  }
+  try {
+    openAPIfile.value = await fetchOpenAPI(url)
+    alert(`OpenAPI ${openAPIfile.value.openapi} document loaded: "${openAPIfile.value.info?.title ?? 'untitled'}"`)
+  } catch (e) {
+    openAPIfile.value = null
+    alert('Load failed: ' + e.message)
+  }
+}
+
+async function autoLoadOpenAPI(items) {
+  const dataProduct = items.find(i => i.type === 'data-product' && i.openAPIUrl)
+  if (!dataProduct) return
+  try {
+    openAPIfile.value = await fetchOpenAPI(dataProduct.openAPIUrl)
+  } catch {
+    openAPIfile.value = null
+  }
 }
 
 async function openPolicyDoc(item) {
@@ -787,7 +907,7 @@ function buildXml(tab) {
     .replace(/>/g, '&gt;')
 
   const elementsXml = tab.placedItems.map((item, i) => {
-    const tag = escape(item.type)
+    const tag = escape(typeToTag(item.type))
     const base = `    <${tag} id="${i}" icon="${escape(item.iconName)}" x="${item.x}" y="${item.y}"`
     const extras = Object.entries(item)
       .filter(([k]) => !['type', 'iconName', 'x', 'y'].includes(k))
@@ -840,21 +960,21 @@ function onCanvasDrop(event, tab) {
     const item = { x, y, iconName, type }
     const count = n => tab.placedItems.filter(i => i.type === n).length + 1
     if (type === 'data-source')         { item.name = `Data Source ${count(type)}`;         item.path = '' }
-    if (type === 'data-product')        { item.name = `Data Product ${count(type)}`;        item.endpoint = '' }
+    if (type === 'data-product')        { item.name = `Data Product ${count(type)}`;        item.endpoint = '';  item.openAPIUrl = '' }
     if (type === 'exposed-data')        { item.name = `Exposed Data ${count(type)}` }
     if (type === 'policy-doc')              { item.name = `Data Usage Policy ${count(type)}`;      item.filename = '' }
     if (type === 'transformation-policy')   { item.name = `Transformation Policy ${count(type)}`; item.filename = '' }
     if (type === 'authorization')       { item.name = `Authorization ${count(type)}`;  item.expression = '' }
-    if (type === 'user-attributes')     { item.name = `User Attributes ${count(type)}` }
-    if (type === 'request-attributes')  { item.name = `Request Attributes ${count(type)}` }
-    if (type === 'system-attributes')   { item.name = `System Attributes ${count(type)}` }
+    if (type === 'user-attributes')     { item.name = `User Attributes ${count(type)}`;   item.attributes = '' }
+    if (type === 'request-attributes')  { item.name = `Request Attributes ${count(type)}`; item.attributes = '' }
+    if (type === 'system-attributes')   { item.name = `System Attributes ${count(type)}`; item.attributes = '' }
     if (type === 'filter')              { item.name = `Filter ${count(type)}`;              item.expression = '' }
     if (type === 'projection')          { item.name = `Projection ${count(type)}`;          item.expression = '' }
     if (type === 'encryption')          { item.name = `Encryption ${count(type)}`;          item.expression = '' }
     if (type === 'anonymization')       { item.name = `Anonymization ${count(type)}`;       item.expression = '' }
     if (type === 'rename')              { item.name = `Rename ${count(type)}`;              item.expression = '' }
     if (type === 'usage')               { item.name = `Usage ${count(type)}`;               item.expression = '' }
-    if (type === 'shared-data-product') { item.name = `Shared Data Product ${count(type)}` }
+    if (type === 'shared-data-product') { item.name = `Shared Data Product ${count(type)}`; item.endpoint = '' }
     pushUndo(tab)
     tab.placedItems.push(item)
     tab.isDirty = true
@@ -913,8 +1033,11 @@ function onItemClick(index, tab) {
         c => (c.from === a && c.to === b) || (c.from === b && c.to === a)
       )
       if (!alreadyConnected) {
-        if (isJunction(tab.placedItems[a].type) && tab.connections.some(c => c.from === a)) return
-        const allowed = allowedTypes(a, b, tab)
+        let allowed = allowedTypes(a, b, tab)
+        // Junction as source: assigned = max 1 outgoing, flow = unlimited
+        if (isJunction(tab.placedItems[a].type) && tab.connections.some(c => c.from === a)) {
+          allowed = allowed.filter(t => t !== 'assigned')
+        }
         if (allowed.length === 0) {
           const fromType = tab.placedItems[a].type
           const toType = tab.placedItems[b].type
@@ -925,6 +1048,7 @@ function onItemClick(index, tab) {
         } else if (allowed.length === 1) {
           pushUndo(tab)
           tab.connections.push({ from: a, to: b, type: allowed[0] })
+          populateRequestAttributes(tab, a, b)
           tab.isDirty = true
         } else {
           tab.pendingConnection = { from: a, to: b, allowed }
@@ -948,8 +1072,15 @@ function startConnection(index, tab) {
 
 function confirmConnection(tab, type) {
   if (tab.pendingConnection) {
+    const { from } = tab.pendingConnection
+    if (type === 'assigned' && isJunction(tab.placedItems[from]?.type) && tab.connections.some(c => c.from === from)) {
+      tab.pendingConnection = null
+      return
+    }
     pushUndo(tab)
+    const { from: pFrom, to: pTo } = tab.pendingConnection
     tab.connections.push({ ...tab.pendingConnection, type })
+    populateRequestAttributes(tab, pFrom, pTo)
     tab.pendingConnection = null
     tab.isDirty = true
   }
@@ -1495,6 +1626,45 @@ function iconBgColor(type) {
   width: auto;
   box-sizing: border-box;
 }
+
+.input-value--json {
+  font-family: monospace;
+  font-size: 0.72rem;
+  resize: vertical;
+  min-height: 60px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-value--json-invalid {
+  border-color: #e06060;
+  background: #fff5f5;
+  color: #c00;
+}
+
+.input-value--multiselect {
+  width: 200px;
+  height: 80px;
+}
+
+.prop-no-api {
+  font-size: 0.72rem;
+  color: #aaa;
+  font-style: italic;
+}
+
+.prop-load-btn {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  border: 1px solid #aac0d8;
+  border-radius: 3px;
+  background: #e8f0f8;
+  color: #2a4f7a;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.prop-load-btn:hover:not(:disabled) { background: #c8ddf0; }
+.prop-load-btn:disabled { opacity: 0.4; cursor: default; }
 
 .input-textarea {
   flex: 1;

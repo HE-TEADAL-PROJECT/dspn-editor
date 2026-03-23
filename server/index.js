@@ -131,7 +131,11 @@ app.delete('/api/entry', (req, res) => {
   try { abs = safePath(req.query.path || '') } catch { return res.status(400).json({ error: 'Invalid path' }) }
   try {
     const stat = fs.statSync(abs)
-    if (stat.isDirectory()) fs.rmSync(abs, { recursive: true })
+    if (stat.isDirectory()) {
+      const contents = fs.readdirSync(abs)
+      if (contents.length > 0) return res.status(409).json({ error: `Folder "${path.basename(abs)}" is not empty and cannot be deleted.` })
+      fs.rmdirSync(abs)
+    }
     else fs.unlinkSync(abs)
     res.json({ ok: true })
   } catch (e) { res.status(500).json({ error: e.message }) }

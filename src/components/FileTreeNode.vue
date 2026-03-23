@@ -79,6 +79,7 @@ watch(() => props.refreshSignal, async (val) => {
 })
 
 async function onDirClick() {
+  emit('select', props.entry)
   if (!open.value && children.value.length === 0) {
     loading.value = true
     try {

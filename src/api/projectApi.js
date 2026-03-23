@@ -47,7 +47,10 @@ export async function createDir(dirPath) {
 
 export async function deleteEntry(entryPath) {
   const res = await fetch(`/api/entry?path=${encodeURIComponent(entryPath)}`, { method: 'DELETE' })
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error ?? res.statusText)
+  }
 }
 
 export async function renameEntry(oldPath, newPath) {
