@@ -180,7 +180,11 @@
                 </template>
                 <template v-else>
                   <i :class="['fas', 'fa-' + item.iconName]" :style="{ color: iconColor(item.type) }"></i>
-                  <span v-if="item.name" class="item-label">{{ item.name }}</span>
+                  <span v-if="item.name" class="item-label">
+                    {{ item.name }}
+                    <span v-if="item.expression" class="item-expression">[{{ item.expression }}]</span>
+                    <span v-if="(item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="item-expression">[{{ item.filename }}]</span>
+                  </span>
                 </template>
                 <button v-if="tab.selectedItem === index" class="delete-btn" @click.stop="deleteItem(index, tab)">
                   <i class="fas fa-trash"></i>
@@ -577,6 +581,39 @@ const connectionRules = {
 function allowedTypes(fromIndex, toIndex, tab) {
   const fromType = tab.placedItems[fromIndex].type
   const toType   = tab.placedItems[toIndex].type
+
+  if (isJunction(fromType) && isJunction(toType)) {
+    // upstream constraint: what non-junction nodes feed into fromIndex
+    const sources = tab.connections
+      .filter(c => c.to === fromIndex && !isJunction(tab.placedItems[c.from].type))
+      .map(c => tab.placedItems[c.from].type)
+    // downstream constraint: what non-junction nodes toIndex sends to
+    const destinations = tab.connections
+      .filter(c => c.from === toIndex && !isJunction(tab.placedItems[c.to].type))
+      .map(c => tab.placedItems[c.to].type)
+
+    if (sources.length === 0 && destinations.length === 0) return ['flow', 'assigned', 'access', 'composed']
+
+    if (destinations.length === 0) {
+      // only upstream context: intersect types each source can produce to any target
+      const sets = sources.map(s =>
+        [...new Set(Object.entries(connectionRules).filter(([k]) => k.startsWith(s + ':')).flatMap(([, v]) => v))]
+      )
+      return sets.reduce((acc, s) => acc.filter(t => s.includes(t)), sets[0] ?? [])
+    }
+
+    if (sources.length === 0) {
+      // only downstream context: intersect types each destination can accept from any source
+      const sets = destinations.map(d =>
+        [...new Set(Object.entries(connectionRules).filter(([k]) => k.endsWith(':' + d)).flatMap(([, v]) => v))]
+      )
+      return sets.reduce((acc, s) => acc.filter(t => s.includes(t)), sets[0] ?? [])
+    }
+
+    // both known: for each (source, destination) pair apply connectionRules, then intersect
+    const pairs = sources.flatMap(s => destinations.map(d => connectionRules[`${s}:${d}`] ?? []))
+    return pairs.reduce((acc, s) => acc.filter(t => s.includes(t)), pairs[0] ?? [])
+  }
 
   if (isJunction(toType)) {
     // A → junction: derive rules from what the junction already sends to
@@ -1965,14 +2002,22 @@ function iconBgColor(type) {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   font-size: 0.65rem;
   color: #333;
   padding: 0 0.5rem;
   text-align: center;
   word-break: break-word;
   pointer-events: none;
+}
+
+.item-expression {
+  font-size: 0.6rem;
+  color: #555;
+  font-style: italic;
 }
 
 .app-header {
