@@ -50,62 +50,107 @@
             <div
               v-show="tab.view === 'diagram'"
               class="canvas-container"
+              :ref="el => setCanvasContainerRef(el, tab.id)"
             @dragover="onCanvasDragOver"
             @drop="e => onCanvasDrop(e, tab)"
             @click="e => onCanvasClick(e, tab)"
           >
             <canvas class="diagram-canvas"></canvas>
 
-            <!-- SVG connections -->
-            <svg class="connections">
-              <defs>
-                <marker id="arrow" viewBox="0 0 8 6" markerWidth="5" markerHeight="4" refX="6" refY="3" orient="auto">
-                  <path d="M0,0 L0,6 L8,3 z" fill="#333"/>
-                </marker>
-                <marker id="dot" viewBox="0 0 6 6" markerWidth="4" markerHeight="4" refX="3" refY="3" orient="auto">
-                  <circle cx="3" cy="3" r="2.5" fill="#333"/>
-                </marker>
-                <marker id="v-arrow" viewBox="0 0 8 10" markerWidth="5" markerHeight="6" refX="8" refY="5" orient="auto">
-                  <path d="M0,0 L8,5 L0,10 L3,5 Z" fill="#000"/>
-                </marker>
-                <marker id="triangle" viewBox="0 0 8 8" markerWidth="5" markerHeight="5" refX="6" refY="4" orient="auto">
-                  <polygon points="0,0 8,4 0,8" fill="#000"/>
-                </marker>
-                <marker id="diamond" viewBox="0 0 10 10" markerWidth="6" markerHeight="6" refX="0" refY="5" orient="auto">
-                  <polygon points="0,5 5,0 10,5 5,10" fill="#000"/>
-                </marker>
-              </defs>
-              <line
-                v-for="(conn, ci) in tab.connections"
-                :key="ci"
-                v-bind="connectionPoints(conn, tab)"
-                :stroke="tab.selectedConnection === ci ? '#646cff' : connectionColor(conn.type)"
-                :stroke-width="tab.selectedConnection === ci ? 2.5 : 1.5"
-                :stroke-dasharray="connectionDash(conn.type)"
-                :marker-start="conn.type === 'assigned' ? 'url(#dot)' : conn.type === 'composed' ? 'url(#diamond)' : null"
-                :marker-end="conn.type === 'assigned' ? 'url(#arrow)' : conn.type === 'access' ? 'url(#v-arrow)' : conn.type === 'flow' ? 'url(#triangle)' : null"
-              />
-            </svg>
+            <!-- Wrapper that gives the scroll container the correct layout size -->
+            <div class="canvas-scene-wrapper" :style="sceneWrapperStyle(tab)">
 
-            <!-- Canvas toolbar -->
-            <div class="canvas-toolbar" @click.stop @dragover.prevent>
-              <span v-if="tab.serverPath" class="canvas-filename">{{ tab.serverPath }}</span>
-              <span v-if="tab.isConnecting" class="canvas-connecting">select second item to connect</span>
-              <template v-if="tab.view === 'diagram'">
-                <button class="btn-canvas-undo" :disabled="!tab.undoStack.length" @click="undo(tab)" title="Undo">
-                  <i class="fas fa-rotate-left"></i>
+            <!-- Scalable scene -->
+            <div class="canvas-scene" :style="{ transform: `scale(${tab.zoom})`, transformOrigin: '0 0' }">
+
+              <!-- SVG connections -->
+              <svg class="connections">
+                <defs>
+                  <marker id="arrow" viewBox="0 0 8 6" markerWidth="5" markerHeight="4" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#333"/>
+                  </marker>
+                  <marker id="dot" viewBox="0 0 6 6" markerWidth="4" markerHeight="4" refX="3" refY="3" orient="auto">
+                    <circle cx="3" cy="3" r="2.5" fill="#333"/>
+                  </marker>
+                  <marker id="v-arrow" viewBox="0 0 8 10" markerWidth="5" markerHeight="6" refX="8" refY="5" orient="auto">
+                    <path d="M0,0 L8,5 L0,10 L3,5 Z" fill="#000"/>
+                  </marker>
+                  <marker id="triangle" viewBox="0 0 8 8" markerWidth="5" markerHeight="5" refX="6" refY="4" orient="auto">
+                    <polygon points="0,0 8,4 0,8" fill="#000"/>
+                  </marker>
+                  <marker id="diamond" viewBox="0 0 10 10" markerWidth="6" markerHeight="6" refX="0" refY="5" orient="auto">
+                    <polygon points="0,5 5,0 10,5 5,10" fill="#000"/>
+                  </marker>
+                </defs>
+                <line
+                  v-for="(conn, ci) in tab.connections"
+                  :key="ci"
+                  v-bind="connectionPoints(conn, tab)"
+                  :stroke="tab.selectedConnection === ci ? '#646cff' : connectionColor(conn.type)"
+                  :stroke-width="tab.selectedConnection === ci ? 2.5 : 1.5"
+                  :stroke-dasharray="connectionDash(conn.type)"
+                  :marker-start="conn.type === 'assigned' ? 'url(#dot)' : conn.type === 'composed' ? 'url(#diamond)' : null"
+                  :marker-end="conn.type === 'assigned' ? 'url(#arrow)' : conn.type === 'access' ? 'url(#v-arrow)' : conn.type === 'flow' ? 'url(#triangle)' : null"
+                />
+              </svg>
+
+              <!-- Connection delete button -->
+              <div class="conn-overlays">
+                <button
+                  v-if="tab.selectedConnection !== null"
+                  class="conn-delete-btn"
+                  :style="{
+                    left: connectionMidpoint(tab.connections[tab.selectedConnection], tab).x + 'px',
+                    top:  connectionMidpoint(tab.connections[tab.selectedConnection], tab).y + 'px'
+                  }"
+                  @click.stop="deleteConnection(tab, tab.selectedConnection)"
+                >
+                  <i class="fas fa-trash"></i>
                 </button>
-                <button class="btn-canvas-undo" :disabled="!tab.redoStack.length" @click="redo(tab)" title="Redo">
-                  <i class="fas fa-rotate-right"></i>
-                </button>
-              </template>
-              <button class="btn-canvas-save" @click="saveDiagram">
-                <i class="fas fa-floppy-disk"></i> Save
-              </button>
-              <button v-if="tab.view === 'diagram'" class="btn-canvas-clear" @click="promptClear(tab)">
-                <i class="fas fa-trash"></i> Clear
-              </button>
-            </div>
+              </div>
+
+              <!-- Placed items -->
+              <div class="placed-items">
+                <div
+                  v-for="(item, index) in tab.placedItems"
+                  :key="index"
+                  class="placed"
+                  :class="{
+                    selected: tab.selectedItems.has(index) || tab.connectFirst === index,
+                    dragging: tab.draggingIndex === index,
+                    'placed--junction': isJunction(item.type)
+                  }"
+                  :style="isJunction(item.type)
+                    ? { left: item.x + 'px', top: item.y + 'px' }
+                    : { left: item.x + 'px', top: item.y + 'px', borderColor: iconColor(item.type), background: iconBgColor(item.type) }"
+                  @mousedown.stop="onItemMouseDown($event, index, tab)"
+                  @click.stop="e => onItemClick(e, index, tab)"
+                >
+                  <template v-if="item.iconName === 'junction-and' || item.iconName === 'junction-or'">
+                    <span class="junction-circle junction-in-canvas" :class="item.iconName === 'junction-and' ? 'junction-and' : 'junction-or'"></span>
+                  </template>
+                  <template v-else>
+                    <i :class="['fas', 'fa-' + item.iconName]" :style="{ color: iconColor(item.type) }"></i>
+                    <span v-if="item.name" class="item-label">
+                      {{ item.name }}
+                      <span v-if="item.expression" class="item-expression">[{{ item.expression }}]</span>
+                      <span v-if="(item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="item-expression">[{{ item.filename }}]</span>
+                    </span>
+                  </template>
+                  <button v-if="tab.selectedItem === index" class="delete-btn" @click.stop="deleteItem(index, tab)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                  <button v-if="tab.selectedItem === index" class="connect-start-btn" @click.stop="startConnection(index, tab)">
+                    <i class="fas fa-arrow-right"></i>
+                  </button>
+                  <button v-if="tab.selectedItem === index && (item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="open-policy-btn" @click.stop="openPolicyDoc(item)">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+            </div><!-- end canvas-scene -->
+            </div><!-- end canvas-scene-wrapper -->
 
             <!-- Clear confirmation modal -->
             <div v-if="tab.showClearConfirm" class="conn-modal-overlay">
@@ -143,61 +188,35 @@
               </div>
             </div>
 
-            <!-- Connection delete button -->
-            <div class="conn-overlays">
-              <button
-                v-if="tab.selectedConnection !== null"
-                class="conn-delete-btn"
-                :style="{
-                  left: connectionMidpoint(tab.connections[tab.selectedConnection], tab).x + 'px',
-                  top:  connectionMidpoint(tab.connections[tab.selectedConnection], tab).y + 'px'
-                }"
-                @click.stop="deleteConnection(tab, tab.selectedConnection)"
-              >
-                <i class="fas fa-trash"></i>
+          </div>
+
+            <!-- Canvas toolbar (outside scroll container so it stays fixed) -->
+            <div v-show="tab.view === 'diagram'" class="canvas-toolbar" @click.stop @dragover.prevent>
+              <span v-if="tab.diagramName || tab.serverPath" class="canvas-filename">
+                <template v-if="tab.diagramName">{{ tab.diagramName }}</template>
+                <template v-if="tab.serverPath"> [{{ tab.serverPath }}]</template>
+              </span>
+              <span v-if="tab.isConnecting" class="canvas-connecting">select second item to connect</span>
+              <button class="btn-canvas-undo" :disabled="!tab.undoStack.length" @click="undo(tab)" title="Undo">
+                <i class="fas fa-rotate-left"></i>
+              </button>
+              <button class="btn-canvas-undo" :disabled="!tab.redoStack.length" @click="redo(tab)" title="Redo">
+                <i class="fas fa-rotate-right"></i>
+              </button>
+              <button class="btn-canvas-save" @click="saveDiagram">
+                <i class="fas fa-floppy-disk"></i> Save
+              </button>
+              <button class="btn-canvas-clear" @click="promptClear(tab)">
+                <i class="fas fa-trash"></i> Clear
               </button>
             </div>
 
-            <!-- Placed items -->
-            <div class="placed-items">
-              <div
-                v-for="(item, index) in tab.placedItems"
-                :key="index"
-                class="placed"
-                :class="{
-                  selected: tab.connectFirst === index || tab.selectedItem === index,
-                  dragging: tab.draggingIndex === index,
-                  'placed--junction': isJunction(item.type)
-                }"
-                :style="isJunction(item.type)
-                  ? { left: item.x + 'px', top: item.y + 'px' }
-                  : { left: item.x + 'px', top: item.y + 'px', borderColor: iconColor(item.type), background: iconBgColor(item.type) }"
-                @mousedown.stop="onItemMouseDown($event, index, tab)"
-                @click.stop="onItemClick(index, tab)"
-              >
-                <template v-if="item.iconName === 'junction-and' || item.iconName === 'junction-or'">
-                  <span class="junction-circle junction-in-canvas" :class="item.iconName === 'junction-and' ? 'junction-and' : 'junction-or'"></span>
-                </template>
-                <template v-else>
-                  <i :class="['fas', 'fa-' + item.iconName]" :style="{ color: iconColor(item.type) }"></i>
-                  <span v-if="item.name" class="item-label">
-                    {{ item.name }}
-                    <span v-if="item.expression" class="item-expression">[{{ item.expression }}]</span>
-                    <span v-if="(item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="item-expression">[{{ item.filename }}]</span>
-                  </span>
-                </template>
-                <button v-if="tab.selectedItem === index" class="delete-btn" @click.stop="deleteItem(index, tab)">
-                  <i class="fas fa-trash"></i>
-                </button>
-                <button v-if="tab.selectedItem === index" class="connect-start-btn" @click.stop="startConnection(index, tab)">
-                  <i class="fas fa-arrow-right"></i>
-                </button>
-                <button v-if="tab.selectedItem === index && (item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="open-policy-btn" @click.stop="openPolicyDoc(item)">
-                  <i class="fas fa-plus"></i>
-                </button>
-              </div>
+            <!-- Zoom controls (outside scroll container so they stay fixed) -->
+            <div v-show="tab.view === 'diagram'" class="zoom-controls" @click.stop>
+              <button class="zoom-btn" @click="zoomIn(tab)" title="Zoom in">+</button>
+              <button class="zoom-btn" @click="zoomOut(tab)" title="Zoom out">−</button>
             </div>
-          </div>
+
           </div><!-- end canvas-area -->
 
           <!-- Properties panel -->
@@ -435,7 +454,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import ProjectManager from './ProjectManager.vue'
 import { writeFile, readFile } from '../api/projectApi.js'
 import { version } from '../../package.json'
@@ -467,12 +486,14 @@ function createTab(fileName = null, items = [], conns = []) {
     showClearConfirm: false,
     serverPath: null,
     isDirty: false,
+    selectedItems: new Set(),
     undoStack: [],
     redoStack: [],
     view: 'diagram',
     diagramSelected: true,
     diagramName: '',
     diagramDescription: '',
+    zoom: 1,
   }
 }
 
@@ -525,6 +546,7 @@ function undo(tab) {
   tab.placedItems = prev.placedItems
   tab.connections = prev.connections
   tab.selectedItem = null
+  tab.selectedItems = new Set()
   tab.selectedConnection = null
   tab.isDirty = true
 }
@@ -539,6 +561,7 @@ function redo(tab) {
   tab.placedItems = next.placedItems
   tab.connections = next.connections
   tab.selectedItem = null
+  tab.selectedItems = new Set()
   tab.selectedConnection = null
   tab.isDirty = true
 }
@@ -757,7 +780,7 @@ function parseXml(xmlString) {
   return { items, conns, diagramName, diagramDescription }
 }
 
-function openFromProject({ xmlText, fileName, serverPath }) {
+async function openFromProject({ xmlText, fileName, serverPath }) {
   const existingIndex = tabs.value.findIndex(t => t.serverPath === serverPath)
   if (existingIndex !== -1) {
     activeTabIndex.value = existingIndex
@@ -766,6 +789,7 @@ function openFromProject({ xmlText, fileName, serverPath }) {
   try {
     const parsed = parseXml(xmlText)
     const current = activeTab.value
+    let target
     if (current && current.placedItems.length === 0 && !current.fileName) {
       current.placedItems = parsed.items
       current.connections = parsed.conns
@@ -773,6 +797,7 @@ function openFromProject({ xmlText, fileName, serverPath }) {
       current.serverPath = serverPath
       current.diagramName = parsed.diagramName
       current.diagramDescription = parsed.diagramDescription
+      target = current
     } else {
       const tab = createTab(fileName, parsed.items, parsed.conns)
       tab.serverPath = serverPath
@@ -780,8 +805,10 @@ function openFromProject({ xmlText, fileName, serverPath }) {
       tab.diagramDescription = parsed.diagramDescription
       tabs.value.push(tab)
       activeTabIndex.value = tabs.value.length - 1
+      target = tab
     }
     autoLoadOpenAPI(parsed.items)
+    fitToView(target)
   } catch {
     alert('Invalid XML file.')
   }
@@ -974,6 +1001,64 @@ ${connectionsXml}
 </dspn-diagram>`
 }
 
+// ── Zoom ──────────────────────────────────────────────────────────────────────
+
+const CANVAS_W = 4000
+const CANVAS_H = 3000
+const canvasContainerRefs = {}
+
+function setCanvasContainerRef(el, tabId) {
+  if (el) canvasContainerRefs[tabId] = el
+  else delete canvasContainerRefs[tabId]
+}
+
+function minZoom(tab) {
+  const el = canvasContainerRefs[tab.id]
+  if (!el) return 0.1
+  return Math.max(el.clientWidth / CANVAS_W, el.clientHeight / CANVAS_H)
+}
+
+function sceneWrapperStyle(tab) {
+  if (tab.placedItems.length === 0) return {}
+  const padding = 100
+  const maxX = Math.max(...tab.placedItems.map(i => i.x)) + ITEM_HW + padding
+  const maxY = Math.max(...tab.placedItems.map(i => i.y)) + ITEM_HH + padding
+  return {
+    width:  maxX * tab.zoom + 'px',
+    height: maxY * tab.zoom + 'px',
+  }
+}
+
+function zoomIn(tab) {
+  tab.zoom = Math.min(2, +(tab.zoom + 0.1).toFixed(2))
+}
+
+function zoomOut(tab) {
+  tab.zoom = Math.max(+minZoom(tab).toFixed(2), +(tab.zoom - 0.1).toFixed(2))
+}
+
+async function fitToView(tab) {
+  await nextTick()
+  const container = canvasContainerRefs[tab.id]
+  if (!container || tab.placedItems.length === 0) return
+
+  const padding = 60
+  const xs = tab.placedItems.map(i => i.x)
+  const ys = tab.placedItems.map(i => i.y)
+  const left   = Math.min(...xs) - ITEM_HW - padding
+  const top    = Math.min(...ys) - ITEM_HH - padding
+  const right  = Math.max(...xs) + ITEM_HW + padding
+  const bottom = Math.max(...ys) + ITEM_HH + padding
+
+  const scaleX = container.clientWidth  / (right - left)
+  const scaleY = container.clientHeight / (bottom - top)
+  tab.zoom = Math.min(scaleX, scaleY, 1, +minZoom(tab).toFixed(2) * 4)
+
+  await nextTick()
+  container.scrollLeft = left * tab.zoom
+  container.scrollTop  = top  * tab.zoom
+}
+
 // ── Canvas interactions ───────────────────────────────────────────────────────
 
 function onDragStart(event) {
@@ -992,8 +1077,8 @@ function onCanvasDrop(event, tab) {
   try {
     const { iconName, type } = JSON.parse(data)
     const rect = event.currentTarget.getBoundingClientRect()
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
+    const x = (event.clientX - rect.left + event.currentTarget.scrollLeft) / tab.zoom
+    const y = (event.clientY - rect.top + event.currentTarget.scrollTop) / tab.zoom
     const item = { x, y, iconName, type }
     const count = n => tab.placedItems.filter(i => i.type === n).length + 1
     if (type === 'data-source')         { item.name = `Data Source ${count(type)}`;         item.path = '' }
@@ -1022,11 +1107,18 @@ function onCanvasDrop(event, tab) {
 
 function onItemMouseDown(event, index, tab) {
   event.preventDefault()
-  const item = tab.placedItems[index]
   const canvasEl = event.currentTarget.closest('.canvas-container')
   const rect = canvasEl.getBoundingClientRect()
-  const offsetX = event.clientX - rect.left - item.x
-  const offsetY = event.clientY - rect.top - item.y
+  const mx0 = (event.clientX - rect.left + canvasEl.scrollLeft) / tab.zoom
+  const my0 = (event.clientY - rect.top  + canvasEl.scrollTop)  / tab.zoom
+
+  // Drag all selected items if this one is part of the selection; otherwise just this one
+  const dragIndices = tab.selectedItems.has(index) ? [...tab.selectedItems] : [index]
+  const offsets = dragIndices.map(i => ({
+    i,
+    dx: mx0 - tab.placedItems[i].x,
+    dy: my0 - tab.placedItems[i].y,
+  }))
 
   tab.draggingIndex = index
   tab.hasDragged = false
@@ -1038,8 +1130,12 @@ function onItemMouseDown(event, index, tab) {
   const onMouseMove = (e) => {
     tab.hasDragged = true
     const r = canvasEl.getBoundingClientRect()
-    tab.placedItems[tab.draggingIndex].x = e.clientX - r.left - offsetX
-    tab.placedItems[tab.draggingIndex].y = e.clientY - r.top - offsetY
+    const mx = (e.clientX - r.left + canvasEl.scrollLeft) / tab.zoom
+    const my = (e.clientY - r.top  + canvasEl.scrollTop)  / tab.zoom
+    for (const { i, dx, dy } of offsets) {
+      tab.placedItems[i].x = mx - dx
+      tab.placedItems[i].y = my - dy
+    }
   }
 
   const onMouseUp = () => {
@@ -1057,7 +1153,7 @@ function onItemMouseDown(event, index, tab) {
   window.addEventListener('mouseup', onMouseUp)
 }
 
-function onItemClick(index, tab) {
+function onItemClick(event, index, tab) {
   if (tab.hasDragged) {
     tab.hasDragged = false
     return
@@ -1097,8 +1193,23 @@ function onItemClick(index, tab) {
     return
   }
   tab.selectedConnection = null
-  tab.selectedItem = tab.selectedItem === index ? null : index
   tab.diagramSelected = false
+
+  if (event.shiftKey) {
+    if (tab.selectedItems.has(index)) {
+      tab.selectedItems.delete(index)
+      if (tab.selectedItem === index) {
+        tab.selectedItem = tab.selectedItems.size > 0 ? [...tab.selectedItems].at(-1) : null
+      }
+    } else {
+      tab.selectedItems.add(index)
+      tab.selectedItem = index
+    }
+  } else {
+    const onlyThis = tab.selectedItems.size === 1 && tab.selectedItems.has(index)
+    tab.selectedItems = onlyThis ? new Set() : new Set([index])
+    tab.selectedItem = onlyThis ? null : index
+  }
 }
 
 function startConnection(index, tab) {
@@ -1137,8 +1248,8 @@ function distToSegment(px, py, x1, y1, x2, y2) {
 
 function onCanvasClick(event, tab) {
   const rect = event.currentTarget.getBoundingClientRect()
-  const mx = event.clientX - rect.left
-  const my = event.clientY - rect.top
+  const mx = (event.clientX - rect.left + event.currentTarget.scrollLeft) / tab.zoom
+  const my = (event.clientY - rect.top + event.currentTarget.scrollTop) / tab.zoom
   for (let i = 0; i < tab.connections.length; i++) {
     const pts = connectionPoints(tab.connections[i], tab)
     if (distToSegment(mx, my, pts.x1, pts.y1, pts.x2, pts.y2) < 6) {
@@ -1150,6 +1261,7 @@ function onCanvasClick(event, tab) {
   }
   tab.selectedConnection = null
   tab.selectedItem = null
+  tab.selectedItems = new Set()
   tab.diagramSelected = true
 }
 
@@ -1172,6 +1284,11 @@ function deleteItem(index, tab) {
       to:   c.to   > index ? c.to   - 1 : c.to,
     }))
   tab.selectedItem = null
+  tab.selectedItems = new Set(
+    [...tab.selectedItems]
+      .filter(i => i !== index)
+      .map(i => i > index ? i - 1 : i)
+  )
 }
 
 // ── Styling helpers ───────────────────────────────────────────────────────────
@@ -1500,12 +1617,61 @@ function iconBgColor(type) {
 
 .canvas-container {
   position: absolute;
-  inset: 0;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: white;
   border: 1px solid #ccc;
   border-radius: 4px;
-  overflow: hidden;
+  overflow: auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-scene-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.canvas-scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4000px;
+  height: 3000px;
+}
+
+.zoom-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoom-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: background 0.15s;
+}
+
+.zoom-btn:hover {
+  background: #f0f0f0;
 }
 
 .canvas-toolbar {
@@ -1727,9 +1893,8 @@ function iconBgColor(type) {
 /* ── Diagram canvas ──────────────────────────────────────────────────────── */
 
 .diagram-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
 }
 
 .connections {
