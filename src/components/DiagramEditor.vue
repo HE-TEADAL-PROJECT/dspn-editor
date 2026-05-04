@@ -132,8 +132,10 @@
                   <template v-else>
                     <i :class="['fas', 'fa-' + item.iconName]" :style="{ color: iconColor(item.type) }"></i>
                     <span v-if="item.name" class="item-label">
+                      <span v-if="item.mode === 'pseudo'" class="item-mode-badge">pseudo</span>
                       {{ item.name }}
                       <span v-if="item.expression" class="item-expression">[{{ item.expression }}]</span>
+                      <span v-if="item.algorithm" class="item-expression">[{{ item.algorithm }}]</span>
                       <span v-if="(item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="item-expression">[{{ item.filename }}]</span>
                     </span>
                   </template>
@@ -283,6 +285,15 @@
               <div v-if="tab.placedItems[tab.selectedItem].expression !== undefined" class="property">
                 <span class="label">Expression:</span>
                 <input v-model="tab.placedItems[tab.selectedItem].expression" type="text" class="input-value input-value--fill" placeholder="Expression" @focus="pushUndo(tab)" @change="tab.isDirty = true">
+              </div>
+              <div v-if="tab.placedItems[tab.selectedItem].mode !== undefined" class="property">
+                <span class="label">Mode:</span>
+                <label class="radio-label"><input type="radio" v-model="tab.placedItems[tab.selectedItem].mode" value="full" @change="pushUndo(tab); tab.isDirty = true"> Full</label>
+                <label class="radio-label"><input type="radio" v-model="tab.placedItems[tab.selectedItem].mode" value="pseudo" @change="pushUndo(tab); tab.isDirty = true"> Pseudo</label>
+              </div>
+              <div v-if="tab.placedItems[tab.selectedItem].algorithm !== undefined" class="property">
+                <span class="label">Algorithm:</span>
+                <input v-model="tab.placedItems[tab.selectedItem].algorithm" type="text" class="input-value input-value--fill" placeholder="Algorithm" @focus="pushUndo(tab)" @change="tab.isDirty = true">
               </div>
             </div>
             <div v-else-if="tab.diagramSelected" class="properties-content">
@@ -1093,7 +1104,7 @@ function onCanvasDrop(event, tab) {
     if (type === 'filter')              { item.name = `Filter ${count(type)}`;              item.expression = '' }
     if (type === 'projection')          { item.name = `Projection ${count(type)}`;          item.expression = '' }
     if (type === 'encryption')          { item.name = `Encryption ${count(type)}`;          item.expression = '' }
-    if (type === 'anonymization')       { item.name = `Anonymization ${count(type)}`;       item.expression = '' }
+    if (type === 'anonymization')       { item.name = `Anonymization ${count(type)}`;       item.mode = 'full'; item.algorithm = '' }
     if (type === 'rename')              { item.name = `Rename ${count(type)}`;              item.expression = '' }
     if (type === 'usage')               { item.name = `Usage ${count(type)}`;               item.expression = '' }
     if (type === 'shared-data-product') { item.name = `Shared Data Product ${count(type)}`; item.endpoint = '' }
@@ -1799,6 +1810,13 @@ function iconBgColor(type) {
   font-size: 0.8rem;
 }
 
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
 .property .label {
   font-weight: 600;
   min-width: 80px;
@@ -2183,6 +2201,18 @@ function iconBgColor(type) {
   font-size: 0.6rem;
   color: #555;
   font-style: italic;
+}
+
+.item-mode-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7a5200;
+  background: #ffe0a0;
+  border-radius: 3px;
+  padding: 0 3px;
+  line-height: 1.4;
 }
 
 .app-header {
