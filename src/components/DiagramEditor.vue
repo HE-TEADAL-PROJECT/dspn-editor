@@ -608,7 +608,7 @@ const connectionRules = {
     transformationTypes.flatMap(a => transformationTypes.filter(b => b !== a).map(b => [`${a}:${b}`, ['flow']]))
   ),
   ...Object.fromEntries(
-    attributeTypes.flatMap(a => transformationTypes.map(t => [`${a}:${t}`, ['access']]))
+    attributeTypes.flatMap(a => [...transformationTypes, ...usageTypes].map(t => [`${a}:${t}`, ['access']]))
   ),
 }
 
