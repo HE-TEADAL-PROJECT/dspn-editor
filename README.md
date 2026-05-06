@@ -59,39 +59,7 @@ The app will be available at http://localhost:3001.
 
 ## With Docker
 
-### Pull the image
-
-```bash
-docker pull polimiis/dspn-editor:latest
-```
-
-### Run the container
-
-```bash
-docker run -d \
-  -p 3001:3001 \
-  -v /path/to/your/projects:/data/projects \
-  polimiis/dspn-editor:latest
-```
-
-The app will be available at http://localhost:3001.
-
-The `-v` flag mounts a local directory into the container so your project files persist across restarts. Replace `/path/to/your/projects` with the desired path on your host machine.
-
-### Run a specific version
-
-```bash
-docker run -d \
-  -p 3001:3001 \
-  -v /path/to/your/projects:/data/projects \
-  polimiis/dspn-editor:0.9.4
-```
-
-### Build the image locally
-
-```bash
-docker build -t dspn-editor .
-```
+(instructions redacted for anonymous submission)
 
 ---
 
