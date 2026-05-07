@@ -2,7 +2,7 @@
 
 A web-based diagram editor for Data Space Policy Networks (DSPN), built with Vue 3 and Vite.
 
-**Current version: 0.9.4**
+**Current version: 0.9.5**
 
 ## Prerequisites
 

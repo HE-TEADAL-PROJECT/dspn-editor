@@ -50,10 +50,12 @@
             <div
               v-show="tab.view === 'diagram'"
               class="canvas-container"
+              :class="{ selecting: tab.isSelecting }"
               :ref="el => setCanvasContainerRef(el, tab.id)"
             @dragover="onCanvasDragOver"
             @drop="e => onCanvasDrop(e, tab)"
             @click="e => onCanvasClick(e, tab)"
+            @mousedown.capture="e => onCanvasMouseDownCapture(e, tab)"
           >
             <canvas class="diagram-canvas"></canvas>
 
@@ -118,16 +120,50 @@
                   :class="{
                     selected: tab.selectedItems.has(index) || tab.connectFirst === index,
                     dragging: tab.draggingIndex === index,
-                    'placed--junction': isJunction(item.type)
+                    'placed--junction': isJunction(item.type),
+                    'placed--label': item.type === 'label',
+                    'placed--group': item.type === 'group',
                   }"
                   :style="isJunction(item.type)
                     ? { left: item.x + 'px', top: item.y + 'px' }
-                    : { left: item.x + 'px', top: item.y + 'px', borderColor: iconColor(item.type), background: iconBgColor(item.type) }"
-                  @mousedown.stop="onItemMouseDown($event, index, tab)"
-                  @click.stop="e => onItemClick(e, index, tab)"
+                    : item.type === 'label'
+                      ? { left: item.x + 'px', top: item.y + 'px', width: item.width + 'px', height: item.height + 'px', transform: 'none', border: 'none', background: 'transparent' }
+                    : item.type === 'group'
+                      ? { left: item.x + 'px', top: item.y + 'px', width: item.width + 'px', height: item.height + 'px' }
+                      : { left: item.x + 'px', top: item.y + 'px', borderColor: iconColor(item.type), background: iconBgColor(item.type) }"
+                  @mousedown="e => onItemMouseDown(e, index, tab)"
+                  @click="e => onItemClick(e, index, tab)"
+                  @dblclick="e => onItemDblClick(e, index, tab)"
                 >
                   <template v-if="item.iconName === 'junction-and' || item.iconName === 'junction-or'">
                     <span class="junction-circle junction-in-canvas" :class="item.iconName === 'junction-and' ? 'junction-and' : 'junction-or'"></span>
+                  </template>
+                  <template v-else-if="item.type === 'label'">
+                    <input
+                      v-if="tab.editingLabelIndex === index"
+                      type="text"
+                      class="label-textarea"
+                      v-model="item.text"
+                      :style="{ fontSize: (item.fontSize || 14) + 'px' }"
+                      @blur="tab.editingLabelIndex = null; tab.isDirty = true"
+                      @keydown.escape.stop="tab.editingLabelIndex = null"
+                      @keydown.enter.stop="tab.editingLabelIndex = null"
+                      @click.stop
+                      @mousedown.stop
+                      :ref="el => { if (el) el.focus() }"
+                    />
+                    <span v-else class="placed-label-text" :style="{ fontSize: (item.fontSize || 14) + 'px' }">{{ item.text }}</span>
+                    <div class="group-resize-handle group-resize-handle--nw" @mousedown.stop="onGroupResizeMouseDown($event, index, 'nw', tab)"></div>
+                    <div class="group-resize-handle group-resize-handle--ne" @mousedown.stop="onGroupResizeMouseDown($event, index, 'ne', tab)"></div>
+                    <div class="group-resize-handle group-resize-handle--sw" @mousedown.stop="onGroupResizeMouseDown($event, index, 'sw', tab)"></div>
+                    <div class="group-resize-handle group-resize-handle--se" @mousedown.stop="onGroupResizeMouseDown($event, index, 'se', tab)"></div>
+                  </template>
+                  <template v-else-if="item.type === 'group'">
+                    <span v-if="item.name" class="placed-group-name">{{ item.name }}</span>
+                    <div class="group-resize-handle group-resize-handle--nw" @mousedown.stop="onGroupResizeMouseDown($event, index, 'nw', tab)"></div>
+                    <div class="group-resize-handle group-resize-handle--ne" @mousedown.stop="onGroupResizeMouseDown($event, index, 'ne', tab)"></div>
+                    <div class="group-resize-handle group-resize-handle--sw" @mousedown.stop="onGroupResizeMouseDown($event, index, 'sw', tab)"></div>
+                    <div class="group-resize-handle group-resize-handle--se" @mousedown.stop="onGroupResizeMouseDown($event, index, 'se', tab)"></div>
                   </template>
                   <template v-else>
                     <i :class="['fas', 'fa-' + item.iconName]" :style="{ color: iconColor(item.type) }"></i>
@@ -142,7 +178,7 @@
                   <button v-if="tab.selectedItem === index" class="delete-btn" @click.stop="deleteItem(index, tab)">
                     <i class="fas fa-trash"></i>
                   </button>
-                  <button v-if="tab.selectedItem === index" class="connect-start-btn" @click.stop="startConnection(index, tab)">
+                  <button v-if="tab.selectedItem === index && item.type !== 'label' && item.type !== 'group'" class="connect-start-btn" @click.stop="startConnection(index, tab)">
                     <i class="fas fa-arrow-right"></i>
                   </button>
                   <button v-if="tab.selectedItem === index && (item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="open-policy-btn" @click.stop="openPolicyDoc(item)">
@@ -150,6 +186,17 @@
                   </button>
                 </div>
               </div>
+
+              <div
+                v-if="tab.selectionRect"
+                class="selection-rect"
+                :style="{
+                  left: Math.min(tab.selectionRect.x0, tab.selectionRect.x1) + 'px',
+                  top: Math.min(tab.selectionRect.y0, tab.selectionRect.y1) + 'px',
+                  width: Math.abs(tab.selectionRect.x1 - tab.selectionRect.x0) + 'px',
+                  height: Math.abs(tab.selectionRect.y1 - tab.selectionRect.y0) + 'px',
+                }"
+              ></div>
 
             </div><!-- end canvas-scene -->
             </div><!-- end canvas-scene-wrapper -->
@@ -199,6 +246,15 @@
                 <template v-if="tab.serverPath"> [{{ tab.serverPath }}]</template>
               </span>
               <span v-if="tab.isConnecting" class="canvas-connecting">select second item to connect</span>
+              <button class="btn-canvas-align" :disabled="tab.selectedItems.size < 2" @click="alignItems(tab, 'horizontal')" title="Align horizontally (same row)">
+                <i class="fas fa-grip-lines"></i>
+              </button>
+              <button class="btn-canvas-align" :disabled="tab.selectedItems.size < 2" @click="alignItems(tab, 'vertical')" title="Align vertically (same column)">
+                <i class="fas fa-grip-lines-vertical"></i>
+              </button>
+              <button class="btn-canvas-select" :class="{ active: tab.isSelecting }" @click="toggleSelect(tab)" title="Select (drag to select multiple items)">
+                <i class="fas fa-object-group"></i>
+              </button>
               <button class="btn-canvas-undo" :disabled="!tab.undoStack.length" @click="undo(tab)" title="Undo">
                 <i class="fas fa-rotate-left"></i>
               </button>
@@ -294,6 +350,17 @@
               <div v-if="tab.placedItems[tab.selectedItem].algorithm !== undefined" class="property">
                 <span class="label">Algorithm:</span>
                 <input v-model="tab.placedItems[tab.selectedItem].algorithm" type="text" class="input-value input-value--fill" placeholder="Algorithm" @focus="pushUndo(tab)" @change="tab.isDirty = true">
+              </div>
+              <div v-if="tab.placedItems[tab.selectedItem].type === 'label'" class="property">
+                <span class="label">Font size:</span>
+                <input
+                  type="number"
+                  min="8" max="96" step="1"
+                  v-model.number="tab.placedItems[tab.selectedItem].fontSize"
+                  class="input-value input-value--short"
+                  @focus="pushUndo(tab)"
+                  @change="tab.isDirty = true"
+                >
               </div>
             </div>
             <div v-else-if="tab.diagramSelected" class="properties-content">
@@ -435,6 +502,23 @@
             </div>
           </div>
         </div>
+        <div class="palette-section palette-section--others">
+          <h4>Others</h4>
+          <div class="transformation-grid">
+            <div class="palette-subsubsection">
+              <div class="icon" draggable="true" data-type="label" data-icon="font" @dragstart="onDragStart">
+                <i class="fas fa-font"></i>
+              </div>
+              <span class="label">Label</span>
+            </div>
+            <div class="palette-subsubsection">
+              <div class="icon" draggable="true" data-type="group" data-icon="border-none" @dragstart="onDragStart">
+                <i class="fas fa-border-none"></i>
+              </div>
+              <span class="label">Group</span>
+            </div>
+          </div>
+        </div>
         <div class="palette-section">
           <h4>Junctions</h4>
           <div class="transformation-grid">
@@ -465,7 +549,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import ProjectManager from './ProjectManager.vue'
 import { writeFile, readFile } from '../api/projectApi.js'
 import { version } from '../../package.json'
@@ -498,6 +582,9 @@ function createTab(fileName = null, items = [], conns = []) {
     serverPath: null,
     isDirty: false,
     selectedItems: new Set(),
+    isSelecting: false,
+    selectionRect: null,
+    editingLabelIndex: null,
     undoStack: [],
     redoStack: [],
     view: 'diagram',
@@ -536,6 +623,55 @@ async function closeTab(i) {
     activeTabIndex.value = Math.max(0, tabs.value.length - 1)
   }
 }
+
+// ── Arrow-key movement ───────────────────────────────────────────────────────
+
+const arrowKeysHeld = new Set()
+
+function onArrowKey(e) {
+  const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
+  if (!ARROWS.includes(e.key)) return
+  const tag = document.activeElement?.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+  const tab = activeTab.value
+  if (!tab) return
+
+  const indices = tab.selectedItems.size > 0
+    ? [...tab.selectedItems]
+    : tab.selectedItem !== null ? [tab.selectedItem] : []
+  if (indices.length === 0) return
+
+  e.preventDefault()
+
+  if (!arrowKeysHeld.has(e.key)) {
+    arrowKeysHeld.add(e.key)
+    pushUndo(tab)
+  }
+
+  const step = e.shiftKey ? 10 : 1
+  const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0
+  const dy = e.key === 'ArrowUp'   ? -step : e.key === 'ArrowDown'  ? step : 0
+  indices.forEach(i => {
+    tab.placedItems[i].x += dx
+    tab.placedItems[i].y += dy
+  })
+  tab.isDirty = true
+}
+
+function onArrowKeyUp(e) {
+  arrowKeysHeld.delete(e.key)
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onArrowKey)
+  window.addEventListener('keyup', onArrowKeyUp)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onArrowKey)
+  window.removeEventListener('keyup', onArrowKeyUp)
+})
 
 // ── Undo / Redo ──────────────────────────────────────────────────────────────
 
@@ -1108,28 +1244,33 @@ function onCanvasDrop(event, tab) {
     if (type === 'rename')              { item.name = `Rename ${count(type)}`;              item.expression = '' }
     if (type === 'usage')               { item.name = `Usage ${count(type)}`;               item.expression = '' }
     if (type === 'shared-data-product') { item.name = `Shared Data Product ${count(type)}`; item.endpoint = '' }
+    if (type === 'label') { item.text = ''; item.fontSize = 14; item.x = x - 100; item.y = y - 16; item.width = 200; item.height = 32 }
+    if (type === 'group') { item.name = `Group ${count(type)}`; item.x = x - 100; item.y = y - 60; item.width = 200; item.height = 120 }
     pushUndo(tab)
     tab.placedItems.push(item)
+    if (type === 'label') { tab.editingLabelIndex = tab.placedItems.length - 1 }
     tab.isDirty = true
   } catch (e) {
     console.error('Invalid drop data', e)
   }
 }
 
+function isGroupBorderClick(event) {
+  const r = event.currentTarget.getBoundingClientRect()
+  const lx = event.clientX - r.left
+  const ly = event.clientY - r.top
+  const tol = 8
+  return lx <= tol || ly <= tol || lx >= r.width - tol || ly >= r.height - tol
+}
+
 function onItemMouseDown(event, index, tab) {
+  if (tab.placedItems[index]?.type === 'group' && !isGroupBorderClick(event)) return
+  event.stopPropagation()
   event.preventDefault()
   const canvasEl = event.currentTarget.closest('.canvas-container')
   const rect = canvasEl.getBoundingClientRect()
   const mx0 = (event.clientX - rect.left + canvasEl.scrollLeft) / tab.zoom
   const my0 = (event.clientY - rect.top  + canvasEl.scrollTop)  / tab.zoom
-
-  // Drag all selected items if this one is part of the selection; otherwise just this one
-  const dragIndices = tab.selectedItems.has(index) ? [...tab.selectedItems] : [index]
-  const offsets = dragIndices.map(i => ({
-    i,
-    dx: mx0 - tab.placedItems[i].x,
-    dy: my0 - tab.placedItems[i].y,
-  }))
 
   tab.draggingIndex = index
   tab.hasDragged = false
@@ -1137,6 +1278,13 @@ function onItemMouseDown(event, index, tab) {
     placedItems: JSON.parse(JSON.stringify(tab.placedItems)),
     connections: JSON.parse(JSON.stringify(tab.connections)),
   }
+
+  const dragIndices = tab.selectedItems.has(index) ? [...tab.selectedItems] : [index]
+  const offsets = dragIndices.map(i => ({
+    i,
+    dx: mx0 - tab.placedItems[i].x,
+    dy: my0 - tab.placedItems[i].y,
+  }))
 
   const onMouseMove = (e) => {
     tab.hasDragged = true
@@ -1165,6 +1313,8 @@ function onItemMouseDown(event, index, tab) {
 }
 
 function onItemClick(event, index, tab) {
+  if (tab.placedItems[index]?.type === 'group' && !isGroupBorderClick(event)) return
+  event.stopPropagation()
   if (tab.hasDragged) {
     tab.hasDragged = false
     return
@@ -1223,6 +1373,13 @@ function onItemClick(event, index, tab) {
   }
 }
 
+function onItemDblClick(event, index, tab) {
+  if (tab.placedItems[index]?.type !== 'label') return
+  event.stopPropagation()
+  pushUndo(tab)
+  tab.editingLabelIndex = index
+}
+
 function startConnection(index, tab) {
   tab.isConnecting = true
   tab.connectFirst = index
@@ -1257,7 +1414,139 @@ function distToSegment(px, py, x1, y1, x2, y2) {
   return Math.sqrt((px - (x1 + t * dx)) ** 2 + (py - (y1 + t * dy)) ** 2)
 }
 
+function toggleSelect(tab) {
+  tab.isSelecting = !tab.isSelecting
+  if (!tab.isSelecting) tab.selectionRect = null
+}
+
+function alignItems(tab, direction) {
+  if (tab.selectedItems.size < 2) return
+  const indices = [...tab.selectedItems]
+  pushUndo(tab)
+  const hasBox = item => item.type === 'group' || item.type === 'label'
+  const centerX = i => {
+    const item = tab.placedItems[i]
+    return hasBox(item) ? item.x + item.width / 2 : item.x
+  }
+  const centerY = i => {
+    const item = tab.placedItems[i]
+    return hasBox(item) ? item.y + item.height / 2 : item.y
+  }
+  if (direction === 'horizontal') {
+    const avgY = indices.reduce((sum, i) => sum + centerY(i), 0) / indices.length
+    indices.forEach(i => {
+      const item = tab.placedItems[i]
+      item.y = hasBox(item) ? avgY - item.height / 2 : avgY
+    })
+  } else {
+    const avgX = indices.reduce((sum, i) => sum + centerX(i), 0) / indices.length
+    indices.forEach(i => {
+      const item = tab.placedItems[i]
+      item.x = hasBox(item) ? avgX - item.width / 2 : avgX
+    })
+  }
+  tab.isDirty = true
+}
+
+function onGroupResizeMouseDown(event, index, corner, tab) {
+  event.preventDefault()
+  const item = tab.placedItems[index]
+  const canvasEl = event.currentTarget.closest('.canvas-container')
+
+  const preSnapshot = {
+    placedItems: JSON.parse(JSON.stringify(tab.placedItems)),
+    connections: JSON.parse(JSON.stringify(tab.connections)),
+  }
+  let hasMoved = false
+
+  const onMouseMove = (e) => {
+    hasMoved = true
+    const r = canvasEl.getBoundingClientRect()
+    const mx = (e.clientX - r.left + canvasEl.scrollLeft) / tab.zoom
+    const my = (e.clientY - r.top  + canvasEl.scrollTop)  / tab.zoom
+    const right  = item.x + item.width
+    const bottom = item.y + item.height
+    if (corner === 'nw') {
+      item.x = Math.min(mx, right - 30);  item.y = Math.min(my, bottom - 30)
+      item.width = right - item.x;        item.height = bottom - item.y
+    } else if (corner === 'ne') {
+      item.y = Math.min(my, bottom - 30)
+      item.width  = Math.max(mx - item.x, 30); item.height = bottom - item.y
+    } else if (corner === 'sw') {
+      item.x = Math.min(mx, right - 30)
+      item.width  = right - item.x;  item.height = Math.max(my - item.y, 30)
+    } else {
+      item.width  = Math.max(mx - item.x, 30); item.height = Math.max(my - item.y, 30)
+    }
+  }
+
+  const onMouseUp = () => {
+    if (hasMoved) {
+      tab.undoStack.push(preSnapshot)
+      tab.redoStack = []
+      tab.isDirty = true
+    }
+    window.removeEventListener('mousemove', onMouseMove)
+    window.removeEventListener('mouseup', onMouseUp)
+  }
+
+  window.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('mouseup', onMouseUp)
+}
+
+function onCanvasMouseDownCapture(event, tab) {
+  if (!tab.isSelecting) return
+  if (event.target.closest('.placed')) return
+  event.stopPropagation()
+  event.preventDefault()
+
+  const canvasEl = event.currentTarget
+  const r = canvasEl.getBoundingClientRect()
+  const x0 = (event.clientX - r.left + canvasEl.scrollLeft) / tab.zoom
+  const y0 = (event.clientY - r.top + canvasEl.scrollTop) / tab.zoom
+
+  tab.selectionRect = { x0, y0, x1: x0, y1: y0 }
+
+  const onMouseMove = (e) => {
+    const rr = canvasEl.getBoundingClientRect()
+    const x1 = (e.clientX - rr.left + canvasEl.scrollLeft) / tab.zoom
+    const y1 = (e.clientY - rr.top + canvasEl.scrollTop) / tab.zoom
+    tab.selectionRect = { x0, y0, x1, y1 }
+  }
+
+  const onMouseUp = () => {
+    if (tab.selectionRect) {
+      const minX = Math.min(tab.selectionRect.x0, tab.selectionRect.x1)
+      const maxX = Math.max(tab.selectionRect.x0, tab.selectionRect.x1)
+      const minY = Math.min(tab.selectionRect.y0, tab.selectionRect.y1)
+      const maxY = Math.max(tab.selectionRect.y0, tab.selectionRect.y1)
+      tab.selectedItems = new Set(
+        tab.placedItems
+          .map((item, i) => ({ item, i }))
+          .filter(({ item }) => {
+            if (isJunction(item.type)) {
+              return item.x + 10 > minX && item.x - 10 < maxX && item.y + 10 > minY && item.y - 10 < maxY
+            }
+            if (item.type === 'group') {
+              return item.x + item.width > minX && item.x < maxX && item.y + item.height > minY && item.y < maxY
+            }
+            return item.x + 49.5 > minX && item.x - 49.5 < maxX && item.y + 26 > minY && item.y - 26 < maxY
+          })
+
+          .map(({ i }) => i)
+      )
+      tab.selectionRect = null
+    }
+    window.removeEventListener('mousemove', onMouseMove)
+    window.removeEventListener('mouseup', onMouseUp)
+  }
+
+  window.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('mouseup', onMouseUp)
+}
+
 function onCanvasClick(event, tab) {
+  if (tab.isSelecting) return
   const rect = event.currentTarget.getBoundingClientRect()
   const mx = (event.clientX - rect.left + event.currentTarget.scrollLeft) / tab.zoom
   const my = (event.clientY - rect.top + event.currentTarget.scrollTop) / tab.zoom
@@ -1378,6 +1667,7 @@ function iconBgColor(type) {
 }
 
 .palette-section--data .icon        { color: #6C8EBF; }
+.palette-section--others .icon      { color: #888; }
 .palette-subsection--transformation .icon { color: #D6B656; }
 .palette-section--exposed .icon     { color: #9673A6; }
 .palette-section--attributes .icon  { color: #82B366; }
@@ -1703,7 +1993,9 @@ function iconBgColor(type) {
 
 .btn-canvas-save,
 .btn-canvas-clear,
-.btn-canvas-undo {
+.btn-canvas-undo,
+.btn-canvas-align,
+.btn-canvas-select {
   padding: 0.3rem 0.7rem;
   height: 28px;
   box-sizing: border-box;
@@ -1720,8 +2012,42 @@ function iconBgColor(type) {
 }
 
 
-.btn-canvas-undo {
+.btn-canvas-align {
   margin-left: auto;
+  background-color: #e8e8e8;
+  color: #444;
+}
+
+.btn-canvas-align + .btn-canvas-align,
+.btn-canvas-align + .btn-canvas-select,
+.btn-canvas-select + .btn-canvas-undo {
+  margin-left: 0;
+}
+
+.btn-canvas-align:hover:not(:disabled) {
+  background-color: #d0d0d0;
+}
+
+.btn-canvas-align:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn-canvas-select {
+  background-color: #e8e8e8;
+  color: #444;
+}
+
+.btn-canvas-select:hover:not(.active) {
+  background-color: #d0d0d0;
+}
+
+.btn-canvas-select.active {
+  background-color: #646cff;
+  color: white;
+}
+
+.btn-canvas-undo {
   background-color: #e8e8e8;
   color: #444;
 }
@@ -1755,6 +2081,19 @@ function iconBgColor(type) {
 
 .btn-canvas-clear:hover {
   background-color: #c8c8c8;
+}
+
+.selecting,
+.selecting * {
+  cursor: crosshair !important;
+}
+
+.selection-rect {
+  position: absolute;
+  border: 2px dashed #646cff;
+  background: rgba(100, 108, 255, 0.07);
+  pointer-events: none;
+  z-index: 20;
 }
 
 .canvas-filename {
@@ -1846,6 +2185,10 @@ function iconBgColor(type) {
   flex: 1;
   width: auto;
   box-sizing: border-box;
+}
+
+.input-value--short {
+  width: 60px;
 }
 
 .input-value--json {
@@ -2170,6 +2513,72 @@ function iconBgColor(type) {
   border: none !important;
   background: transparent !important;
   border-radius: 50%;
+}
+
+.placed--label {
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.placed-label-text {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 0 4px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.label-textarea {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #333;
+  padding: 0 4px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.placed:not(.placed--group) {
+  z-index: 1;
+}
+
+.placed--group {
+  transform: none;
+  border: 2px dashed #888 !important;
+  background: rgba(180, 180, 180, 0.08) !important;
+  border-radius: 6px;
+  z-index: 0;
+}
+
+.group-resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  z-index: 2;
+}
+
+.group-resize-handle--nw { top: -5px;    left: -5px;   cursor: nw-resize; }
+.group-resize-handle--ne { top: -5px;    right: -5px;  cursor: ne-resize; }
+.group-resize-handle--sw { bottom: -5px; left: -5px;   cursor: sw-resize; }
+.group-resize-handle--se { bottom: -5px; right: -5px;  cursor: se-resize; }
+
+.placed-group-name {
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #888;
+  pointer-events: none;
 }
 
 .junction-in-canvas {
