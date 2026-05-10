@@ -318,10 +318,6 @@
                 <button class="prop-load-btn" title="Inspect OpenAPI file" :disabled="!tab.placedItems[tab.selectedItem].openAPIUrl" @click="openEndpoint(tab.placedItems[tab.selectedItem].openAPIUrl)">Inspect</button>
                 <button class="prop-load-btn" title="Load OpenAPI file" :disabled="!tab.placedItems[tab.selectedItem].openAPIUrl" @click="loadEndpoint(tab.placedItems[tab.selectedItem].openAPIUrl)">Load</button>
               </div>
-              <div v-if="tab.placedItems[tab.selectedItem].type === 'data-product'" class="property">
-                <span class="label">Endpoint:</span>
-                <input v-model="tab.placedItems[tab.selectedItem].endpoint" type="text" class="input-value" placeholder="URL" @focus="pushUndo(tab)" @change="tab.isDirty = true">
-              </div>
               <div v-if="tab.placedItems[tab.selectedItem].type === 'shared-data-product'" class="property">
                 <span class="label">Endpoint:</span>
                 <input v-model="tab.placedItems[tab.selectedItem].endpoint" type="text" class="input-value" placeholder="URL" @focus="pushUndo(tab)" @change="tab.isDirty = true">
@@ -1229,7 +1225,7 @@ function onCanvasDrop(event, tab) {
     const item = { x, y, iconName, type }
     const count = n => tab.placedItems.filter(i => i.type === n).length + 1
     if (type === 'data-source')         { item.name = `Data Source ${count(type)}`;         item.path = '' }
-    if (type === 'data-product')        { item.name = `Data Product ${count(type)}`;        item.endpoint = '';  item.openAPIUrl = '' }
+    if (type === 'data-product')        { item.name = `Data Product ${count(type)}`;        item.openAPIUrl = '' }
     if (type === 'exposed-data')        { item.name = `Exposed Data ${count(type)}` }
     if (type === 'policy-doc')              { item.name = `Data Usage Policy ${count(type)}`;      item.filename = '' }
     if (type === 'transformation-policy')   { item.name = `Transformation Policy ${count(type)}`; item.filename = '' }
