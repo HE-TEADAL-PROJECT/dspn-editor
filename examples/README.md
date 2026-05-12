@@ -4,26 +4,6 @@ DSPN has been validated in different domains: healthcare, industry 4.0, agricult
 
 The policy view diagrams of these case studies are reported below along with a short description of the data sharing agreement.
 
-## Healthcare
-
-I dati dei pazienti possono essere all'interno di un'ospedale per ragioni amministrative, cliniche, o di ricerca. Questo implica che diversi attori - sia interni che esteni all'organizzazione - possano accedere a tali dati con livelli di visiblità diverse. 
-Nello specifico si ipotizza che un collaboratore interno possa accedere ai dati dei pazienti solo in forma anonima attraverso una aggregati per età. Questi dati dovranno essere memorizzati solo all'interno dell'Unione Europea per non più di 6 mesi.
-Riguardo ad un collaboratore esterno, appartenente ad una organizzazione con cui l'ospedale ha un accordo di federazione, tutti i dati del paziente potranno essere visibili ma una ricerca massiva non sarà possibile. Infatti è necessario che nella richiesta si specifichi l'id del paziente richiesto
-
-![image](./images/Healthcare/policyView.jpg)
-
-## Industry 4.0
-
-Una impresa manifatturiera con diversi impianti distribuiti sul territorio ha la necessità di integrare i dati provenienti dalla sensoristica installata sui macchinari presenti in tali impianti di produzione. Ipotizzando che ogni impianto offra un data product con i dati esportabili, viene costruiti uno shared data product che offre i risultanti valori dei KPI a specifici attori abilitati alla visualizzazione dei KPI. 
-
-![image](./images/Industry40/policyView.jpg)
-
-## Mobility
-
-In questo scenario si parte dal presupposto che i dati messi a disposizione da parte di un operatore di trasporto locale siano pubblici ma solo in forma aggregata. In questo caso, i dati provenienti da diverse risorse sono integrati per una visione comune senza alcuna policy di autorizzazione in quanti i dati sono liberamente accessibili.
-
-![image](./images/Mobility/policyView.jpg)
-
 ## Agriculture
 
 A Vineyard data product represents the information collected from the sensors placed in the vineyards: Areas, which returns aggregated statistics by geographical area; Treatments, which returns the type of treatments provided to vineyards; and vineyard, which returns the data collected by the sensors.
@@ -31,4 +11,29 @@ A Vineyard data product represents the information collected from the sensors pl
 ![image](./images/Agriculture/vineyard_policyView.jpg)
 
 
-[*]The [dspn-file folder](./dspn-files/) contains the XML files that can be read by the dspn-editor. 
+## Healthcare
+
+Patient data within a hospital may be used for administrative, clinical, or research purposes. This implies that different actors—both internal and external to the organization—may access such data with varying levels of visibility.
+
+Specifically, we assume that an internal collaborator can access patient data only in anonymized form, aggregated by age. These data must be stored exclusively within the European Union and retained for no longer than six months.
+
+With regard to an external collaborator, belonging to an organization with which the hospital has a federation agreement, full patient data may be accessible; however, bulk queries are not permitted. In fact, each request must explicitly specify the identifier of the patient being queried.
+
+
+![image](./images/Healthcare/policyView.jpg)
+
+## Industry 4.0
+
+A manufacturing company with multiple plants distributed across different locations needs to integrate data collected from sensors installed on machinery within these production facilities. Assuming that each plant provides a data product exposing its exportable data, a shared data product is then created to deliver the resulting KPI values to specific actors authorized to access and view them.
+
+![image](./images/Industry40/policyView.jpg)
+
+## Mobility
+
+n this scenario, it is assumed that the data made available by a local public transport operator are public, but only in aggregated form. In such a case, data from multiple sources are integrated to provide a unified view, without the need for authorization policies, as the data are freely accessible.
+
+![image](./images/Mobility/policyView.jpg)
+
+
+
+[*]The [project folder](../projects/) contains the XML files that can be read by the dspn-editor. 
