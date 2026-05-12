@@ -8,6 +8,15 @@ The policy view diagrams of these case studies are reported below along with a s
 
 A Vineyard data product represents the information collected from the sensors placed in the vineyards: Areas, which returns aggregated statistics by geographical area; Treatments, which returns the type of treatments provided to vineyards; and vineyard, which returns the data collected by the sensors.
 
+### Policy View
+![image](./images/Agriculture/vineyard_policyView.jpg)
+
+### Transformation View
+![image](./images/Agriculture/vineyard_encryptPolicy.jpg)
+![image](./images/Agriculture/vineyard_renamePolicy.jpg)
+
+### Access Control View
+![image](./images/Agriculture/vineyard_policyView.jpg)
 ![image](./images/Agriculture/vineyard_policyView.jpg)
 
 
@@ -19,21 +28,40 @@ Specifically, we assume that an internal collaborator can access patient data on
 
 With regard to an external collaborator, belonging to an organization with which the hospital has a federation agreement, full patient data may be accessible; however, bulk queries are not permitted. In fact, each request must explicitly specify the identifier of the patient being queried.
 
-
+### Policy View
 ![image](./images/Healthcare/policyView.jpg)
+
+### Transformation View
+![image](./images/Healthcare/aggregatePolicy.jpg)
+![image](./images/Healthcare/filterOnePatientPolicy.jpg)
+
+### Access Control View
+![image](./images/Healthcare/toCollaboratorsPolicy.jpg)
+![image](./images/Healthcare/toFederatedResearchersPolicy.jpg)
+
 
 ## Industry 4.0
 
 A manufacturing company with multiple plants distributed across different locations needs to integrate data collected from sensors installed on machinery within these production facilities. Assuming that each plant provides a data product exposing its exportable data, a shared data product is then created to deliver the resulting KPI values to specific actors authorized to access and view them.
 
+### Policy View
 ![image](./images/Industry40/policyView.jpg)
+
+### Transformation View
+![image](./images/Industry40/aggregatePolicy.jpg)
+
+### Access Control View
+![image](./images/Industry40/toTopManagementPolicy.jpg)
 
 ## Mobility
 
 n this scenario, it is assumed that the data made available by a local public transport operator are public, but only in aggregated form. In such a case, data from multiple sources are integrated to provide a unified view, without the need for authorization policies, as the data are freely accessible.
 
+### Policy View
 ![image](./images/Mobility/policyView.jpg)
 
-
+### Transformation View
+![image](./images/Mobility/calculateDelaysPolicy.jpg)
+![image](./images/Mobility/generateAnalyticsPolicy.jpg)
 
 [*]The [project folder](../projects/) contains the XML files that can be read by the dspn-editor. 
