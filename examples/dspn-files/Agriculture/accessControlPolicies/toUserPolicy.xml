@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <shared-data-product id="0" icon="share-nodes" x="480" y="206.1999969482422" name="Vineyard Shared Data Product" endpoint=""/>
+    <exposed-data id="1" icon="share" x="481" y="304" name="Vineyard"/>
+    <usage id="2" icon="chart-line" x="709.8000030517578" y="205.1999969482422" name="Location limit" expression="locationLimit: EEA"/>
+    <usage id="3" icon="chart-line" x="707.8000030517578" y="272.1999969482422" name="Retention" expression="timeLimit:6M"/>
+    <authorization id="4" icon="shield-halved" x="707.8000030517578" y="346.1999969482422" name="request limit" expression="userAttribute.location IN {Europe}"/>
+    <authorization id="5" icon="shield-halved" x="705.8000030517578" y="411.1999969482422" name="Request Limit" expression="SystemAttribute.request.requestLimit &lt; 100/Day"/>
+    <user-attributes id="6" icon="user" x="856" y="345.1999969482422" name="User Attributes" attributes=""/>
+    <system-attributes id="7" icon="gear" x="855" y="407.1999969482422" name="System Attributes" attributes=""/>
+    <and-junction id="8" icon="junction-and" x="609" y="377.1999969482422"/>
+    <and-junction id="9" icon="junction-and" x="611" y="237.1999969482422"/>
+    <and-junction id="10" icon="junction-and" x="573" y="303.1999969482422"/>
+  </elements>
+  <connections>
+    <access from="6" to="4"/>
+    <access from="7" to="5"/>
+    <assigned from="5" to="8"/>
+    <assigned from="4" to="8"/>
+    <assigned from="3" to="9"/>
+    <assigned from="2" to="9"/>
+    <assigned from="9" to="10"/>
+    <assigned from="8" to="10"/>
+    <assigned from="10" to="1"/>
+    <composed from="0" to="1"/>
+  </connections>
+</dspn-diagram>

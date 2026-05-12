@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="234" y="128.8000030517578" name="Healthcare Data Product" openAPIUrl=""/>
+    <data-source id="1" icon="database" x="457" y="125.80000305175781" name="Patients" path=""/>
+    <exposed-data id="2" icon="share" x="1020" y="124.80000305175781" name="Single patient"/>
+    <shared-data-product id="3" icon="share-nodes" x="1246" y="121.80000305175781" name="Healthcare Shared Data Product" endpoint=""/>
+    <filter id="4" icon="filter" x="672" y="126.80000305175781" name="Filter one patient" expression="Patients.CF= requestAttributes.CF"/>
+    <request-attributes id="5" icon="paper-plane" x="672" y="263.1999969482422" name="Request Attributes" attributes=""/>
+    <encryption id="6" icon="lock" x="848" y="130.1999969482422" name="Encryption" expression=""/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <composed from="3" to="2"/>
+    <access from="5" to="4"/>
+    <flow from="1" to="4"/>
+    <flow from="4" to="6"/>
+    <flow from="6" to="2"/>
+  </connections>
+</dspn-diagram>

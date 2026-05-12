@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="222" y="157.1999969482422" name="Healthcare Data Product" openAPIUrl=""/>
+    <shared-data-product id="1" icon="share-nodes" x="924" y="45.19999694824219" name="Healthcare Single patient shared data product" endpoint=""/>
+    <exposed-data id="2" icon="share" x="924" y="156.1999969482422" name="Single patient"/>
+    <data-source id="3" icon="database" x="439" y="156.1999969482422" name="Patients " path=""/>
+    <transformation-policy-doc id="4" icon="file-pen" x="664" y="155.1999969482422" name="One patient policy" filename="HospitalCaseStudy/transformationPolicies/onePatientPolicy.xml"/>
+    <data-usage-policy-doc id="5" icon="file-shield" x="1331" y="138.1999969482422" name="ToFederated Researcher policy" filename="HospitalCaseStudy/accessControlPolicies/toFedereatedPolicy.xml"/>
+    <exposed-data id="6" icon="share" x="926" y="339.1999969482422" name="Aggregate By Age"/>
+    <transformation-policy-doc id="7" icon="file-pen" x="657" y="339.1999969482422" name="Aggregate by age policy" filename="HospitalCaseStudy/transformationPolicies/aggregateByAgePolicy.xml"/>
+    <or-junction id="8" icon="junction-or" x="1102" y="157.1999969482422"/>
+    <data-usage-policy-doc id="9" icon="file-shield" x="1328" y="234.1999969482422" name="ToNurse Policy" filename="HospitalCaseStudy/accessControlPolicies/toNursePolicy.xml"/>
+    <data-usage-policy-doc id="10" icon="file-shield" x="1322" y="340.1999969482422" name="ToCollaborator Policy" filename="HospitalCaseStudy/accessControlPolicies/toCollaboratorPolicy.xml"/>
+    <shared-data-product id="11" icon="share-nodes" x="926" y="445.828125" name="Healthcare Aggregated Patient Data Product" endpoint=""/>
+  </elements>
+  <connections>
+    <composed from="0" to="3"/>
+    <composed from="1" to="2"/>
+    <flow from="3" to="4"/>
+    <flow from="4" to="2"/>
+    <flow from="3" to="7"/>
+    <flow from="7" to="6"/>
+    <assigned from="5" to="8"/>
+    <assigned from="9" to="8"/>
+    <assigned from="8" to="2"/>
+    <assigned from="10" to="6"/>
+    <composed from="11" to="6"/>
+  </connections>
+</dspn-diagram>

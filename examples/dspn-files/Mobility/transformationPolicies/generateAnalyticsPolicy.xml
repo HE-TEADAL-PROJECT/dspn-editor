@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="284" y="215.1999969482422" name="Mobility Data Product" openAPIUrl=""/>
+    <data-source id="1" icon="database" x="523" y="128.1999969482422" name="Time tables" path=""/>
+    <data-source id="2" icon="database" x="530" y="219.1999969482422" name="Stop places locations" path=""/>
+    <data-source id="3" icon="database" x="532" y="330.1999969482422" name="Veichles positions" path=""/>
+    <shared-data-product id="4" icon="share-nodes" x="1349" y="198.1999969482422" name="Mobility Shared Data Product" endpoint=""/>
+    <exposed-data id="5" icon="share" x="1153" y="198.1999969482422" name="Analytics and optimisation"/>
+    <filter id="6" icon="filter" x="926" y="199.1999969482422" name="Aggregate" expression=""/>
+    <projection id="7" icon="magnifying-glass" x="731" y="221.1999969482422" name="Remove maintanance data" expression="stopPlaces.maintance.*"/>
+    <filter id="8" icon="filter" x="729" y="333.1999969482422" name="Remove real time data" expression="veichelPosition.collectTime &gt; 10 minutes"/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <composed from="0" to="2"/>
+    <composed from="0" to="3"/>
+    <composed from="4" to="5"/>
+    <flow from="2" to="7"/>
+    <flow from="7" to="6"/>
+    <flow from="6" to="5"/>
+    <flow from="3" to="8"/>
+    <flow from="1" to="6"/>
+    <flow from="8" to="6"/>
+  </connections>
+</dspn-diagram>

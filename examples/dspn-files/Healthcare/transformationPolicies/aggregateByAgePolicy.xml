@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="173" y="168" name="Healthcare Data Product" openAPIUrl=""/>
+    <data-source id="1" icon="database" x="387" y="168.1999969482422" name="Patients" path=""/>
+    <shared-data-product id="2" icon="share-nodes" x="1140" y="164.1999969482422" name="Healthcare Shared Data Product" endpoint=""/>
+    <exposed-data id="3" icon="share" x="950" y="164.1999969482422" name="Aggregate By Age"/>
+    <filter id="4" icon="filter" x="757" y="166.1999969482422" name="Aggregate by age" expression=""/>
+    <projection id="5" icon="magnifying-glass" x="572" y="168.1999969482422" name="Remove Sensitive" expression="Patients.address, Patients.info.*"/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <composed from="2" to="3"/>
+    <flow from="1" to="5"/>
+    <flow from="5" to="4"/>
+    <flow from="4" to="3"/>
+  </connections>
+</dspn-diagram>

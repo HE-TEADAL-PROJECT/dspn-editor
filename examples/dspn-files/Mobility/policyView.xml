@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="235" y="259.1999969482422" name="Mobility Data Product" openAPIUrl=""/>
+    <data-source id="1" icon="database" x="484" y="130.1999969482422" name="Time tables" path=""/>
+    <data-source id="2" icon="database" x="496" y="404.1999969482422" name="Realtime transport delays" path=""/>
+    <data-source id="3" icon="database" x="491" y="228.1999969482422" name="Stop places locations" path=""/>
+    <data-source id="4" icon="database" x="491" y="305.1999969482422" name="Veichles positions" path=""/>
+    <exposed-data id="5" icon="share" x="913" y="177.1999969482422" name="Analytics and optimisation"/>
+    <exposed-data id="6" icon="share" x="917" y="405.1999969482422" name="Delays report analysis"/>
+    <shared-data-product id="7" icon="share-nodes" x="1114" y="263.1999969482422" name="Mobility Shared Data Product" endpoint=""/>
+    <transformation-policy-doc id="8" icon="file-pen" x="703" y="175.1999969482422" name="Generate analytics policy" filename="MobilityCaseStudy/transformationPolicies/generateAnalyticsPolicy.xml"/>
+    <transformation-policy-doc id="9" icon="file-pen" x="697" y="407" name="Calculate delays policy" filename="MobilityCaseStudy/transformationPolicies/calculateDelaysPolicy.xml"/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <composed from="0" to="2"/>
+    <composed from="0" to="3"/>
+    <composed from="0" to="4"/>
+    <flow from="1" to="8"/>
+    <flow from="3" to="8"/>
+    <flow from="4" to="8"/>
+    <flow from="2" to="9"/>
+    <flow from="9" to="6"/>
+    <flow from="8" to="5"/>
+    <composed from="7" to="5"/>
+    <composed from="7" to="6"/>
+  </connections>
+</dspn-diagram>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <exposed-data id="0" icon="share" x="588" y="207.1999969482422" name="Aggregate by age"/>
+    <shared-data-product id="1" icon="share-nodes" x="355" y="210.1999969482422" name="Healthcare Sharde Data Product" endpoint=""/>
+    <usage id="2" icon="chart-line" x="902" y="187.1999969482422" name="Location Limit" expression="locationLimit:  EEA"/>
+    <usage id="3" icon="chart-line" x="901" y="91.19999694824219" name="Retention" expression="6M"/>
+    <authorization id="4" icon="shield-halved" x="904" y="290.1999969482422" name="Collaborators" expression="userAttributes.id IN {COLLABORATOR}"/>
+    <user-attributes id="5" icon="user" x="1081" y="287.1999969482422" name="User Attributes" attributes=""/>
+    <and-junction id="6" icon="junction-and" x="769" y="148.1999969482422"/>
+    <and-junction id="7" icon="junction-and" x="719" y="206.1999969482422"/>
+  </elements>
+  <connections>
+    <composed from="1" to="0"/>
+    <assigned from="3" to="6"/>
+    <assigned from="2" to="6"/>
+    <assigned from="4" to="7"/>
+    <assigned from="6" to="7"/>
+    <assigned from="7" to="0"/>
+    <access from="5" to="4"/>
+  </connections>
+</dspn-diagram>

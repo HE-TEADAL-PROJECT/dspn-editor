@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1" name="Vineyard Shared Data Product">
+  <elements>
+    <data-product id="0" icon="cube" x="306" y="284.1999969482422" name="Vineyard Data Product" endpoint="" openAPIUrl="https://vineyard.com/"/>
+    <data-source id="1" icon="database" x="307" y="168.1999969482422" name="Vineyard" path=""/>
+    <filter id="2" icon="filter" x="442" y="168.1999969482422" name="Filter AOI" expression="userAttributes.user.AOI==vineyardDP.response.AOI"/>
+    <projection id="3" icon="magnifying-glass" x="573" y="167.1999969482422" name="Projection  AOI, Vineyard" expression="vineyardDP.response.AOI, vineyardDP.response.vineyard.*"/>
+    <encryption id="4" icon="lock" x="706" y="168.1999969482422" name="Encryption AES" expression="Algorithm: EAS; Key length: 256"/>
+    <exposed-data id="5" icon="share" x="846" y="167.1999969482422" name="VineyardEncrypted"/>
+    <shared-data-product id="6" icon="share-nodes" x="846" y="275.1999969482422" name="Vineyard Shared Data Product " endpoint=""/>
+    <user-attributes id="7" icon="user" x="436" y="284.1999969482422" name="User Attributes" attributes=""/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <flow from="1" to="2"/>
+    <flow from="2" to="3"/>
+    <flow from="3" to="4"/>
+    <flow from="4" to="5"/>
+    <composed from="6" to="5"/>
+    <access from="7" to="2"/>
+  </connections>
+</dspn-diagram>

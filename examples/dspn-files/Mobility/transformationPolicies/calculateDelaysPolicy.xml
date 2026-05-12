@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1" name="Filter real time data" description="realtimetransportDelays.collectTime &gt; systemAttributes.time + 10 minutes">
+  <elements>
+    <data-product id="0" icon="cube" x="197" y="209.1999969482422" name="Mobility Data Product" openAPIUrl=""/>
+    <data-source id="1" icon="database" x="382" y="210.1999969482422" name="Realtime transport delays" path=""/>
+    <shared-data-product id="2" icon="share-nodes" x="1073" y="211.1999969482422" name="Mobility Shared Data Product" endpoint=""/>
+    <exposed-data id="3" icon="share" x="843" y="214.1999969482422" name="Delays report analysis"/>
+    <filter id="4" icon="filter" x="595" y="212.1999969482422" name="Filter real time data" expression="realtimetransportDelays.collectTime &gt; systemAttributes.time + 10 minutes"/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <composed from="2" to="3"/>
+    <flow from="1" to="4"/>
+    <flow from="4" to="3"/>
+  </connections>
+</dspn-diagram>

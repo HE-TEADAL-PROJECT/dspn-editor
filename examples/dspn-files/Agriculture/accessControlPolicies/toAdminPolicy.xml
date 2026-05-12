@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1" name="System">
+  <elements>
+    <shared-data-product id="0" icon="share-nodes" x="260" y="186.828125" name="Vineyard Shared Data Product" endpoint=""/>
+    <exposed-data id="1" icon="share" x="260" y="311.828125" name="Vineyard"/>
+    <usage id="2" icon="chart-line" x="515" y="182.828125" name="Retention" expression="timeLimit=1M"/>
+    <authorization id="3" icon="shield-halved" x="518" y="333.828125" name="Request limit" expression=" CurrentRequest &lt;=10/day"/>
+    <authorization id="4" icon="shield-halved" x="516" y="256.828125" name="Authorization" expression="User.group IN {ADMIN}"/>
+    <and-junction id="5" icon="junction-and" x="380" y="281.828125"/>
+    <and-junction id="6" icon="junction-and" x="381" y="184.828125"/>
+    <user-attributes id="7" icon="user" x="668" y="255.1999969482422" name="User Attributes" attributes=""/>
+    <system-attributes id="8" icon="gear" x="666.0027160644531" y="337.42662811279297" name="Current Request" attributes="[&quot;attribute1&quot;,&quot;attribute2&quot;]"/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <assigned from="4" to="5"/>
+    <assigned from="3" to="5"/>
+    <assigned from="2" to="6"/>
+    <assigned from="6" to="1"/>
+    <assigned from="5" to="6"/>
+    <access from="8" to="3"/>
+    <access from="7" to="4"/>
+  </connections>
+</dspn-diagram>

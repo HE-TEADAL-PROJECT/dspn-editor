@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <exposed-data id="0" icon="share" x="501" y="104.19999694824219" name="KPIs"/>
+    <shared-data-product id="1" icon="share-nodes" x="262" y="105.19999694824219" name="Industry 4.0 Shared Data Product" endpoint=""/>
+    <usage id="2" icon="chart-line" x="861" y="108.19999694824219" name="No Redistribution" expression="redistribution: NO"/>
+    <authorization id="3" icon="shield-halved" x="862" y="230.1999969482422" name="userAttributes.id IN {TOP_MNG}" expression=""/>
+    <user-attributes id="4" icon="user" x="862" y="355.1999969482422" name="User Attributes" attributes=""/>
+    <and-junction id="5" icon="junction-and" x="692" y="105.19999694824219"/>
+  </elements>
+  <connections>
+    <composed from="1" to="0"/>
+    <access from="4" to="3"/>
+    <assigned from="2" to="5"/>
+    <assigned from="3" to="5"/>
+    <assigned from="5" to="0"/>
+  </connections>
+</dspn-diagram>

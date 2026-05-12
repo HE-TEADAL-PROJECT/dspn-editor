@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <shared-data-product id="0" icon="share-nodes" x="350" y="194.1999969482422" name="Healthcare shared data product" endpoint=""/>
+    <exposed-data id="1" icon="share" x="555" y="194.1999969482422" name="Single patient"/>
+    <usage id="2" icon="chart-line" x="924" y="90.19999694824219" name="Retention" expression="6M"/>
+    <usage id="3" icon="chart-line" x="920" y="181.1999969482422" name="Location limit" expression="locationLimit: EEA"/>
+    <authorization id="4" icon="shield-halved" x="909" y="275.1999969482422" name="Researcher" expression="userAttribute.id IN {FEDERATED_RESEARCHER}"/>
+    <and-junction id="5" icon="junction-and" x="765" y="141.1999969482422"/>
+    <and-junction id="6" icon="junction-and" x="690" y="196.1999969482422"/>
+    <user-attributes id="7" icon="user" x="912" y="399.1999969482422" name="User Attributes" attributes=""/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <assigned from="2" to="5"/>
+    <assigned from="3" to="5"/>
+    <assigned from="4" to="6"/>
+    <assigned from="5" to="6"/>
+    <assigned from="6" to="1"/>
+    <access from="7" to="4"/>
+  </connections>
+</dspn-diagram>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="224" y="73.19999694824219" name="Plant A Data Product" openAPIUrl=""/>
+    <data-product id="1" icon="cube" x="213" y="234.1999969482422" name="Plant B Data Product" openAPIUrl=""/>
+    <data-source id="2" icon="database" x="470" y="75.19999694824219" name="Sensors Plant A" path=""/>
+    <data-source id="3" icon="database" x="458" y="236.1999969482422" name="Sensors Plant A" path=""/>
+    <exposed-data id="4" icon="share" x="853" y="159.1999969482422" name="KPIs"/>
+    <shared-data-product id="5" icon="share-nodes" x="1055" y="157.1999969482422" name="Industry 4.0 Shared Data Product" endpoint=""/>
+    <transformation-policy-doc id="6" icon="file-pen" x="640" y="158.1999969482422" name="Aggregate" filename="Industry40CaseStudy/transformationPolicies/aggregatePolicy.xml"/>
+    <data-usage-policy-doc id="7" icon="file-shield" x="850" y="290.1999969482422" name="toTop Management" filename="Industry40CaseStudy/accessControlPolicies/toTopManagementPolicy.xml"/>
+  </elements>
+  <connections>
+    <composed from="0" to="2"/>
+    <composed from="1" to="3"/>
+    <composed from="5" to="4"/>
+    <flow from="2" to="6"/>
+    <flow from="3" to="6"/>
+    <flow from="6" to="4"/>
+    <assigned from="7" to="4"/>
+  </connections>
+</dspn-diagram>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-source id="0" icon="database" x="310" y="290.828125" name="Vineyard" path="/store/order/{orderId}"/>
+    <data-product id="1" icon="cube" x="109" y="214.828125" name="Vineyard data product" endpoint="/vineyard" openAPIUrl="https://petstore3.swagger.io/api/v3/openapi.json"/>
+    <shared-data-product id="2" icon="share-nodes" x="781" y="235.828125" name="Vineyard Shared Data Product" endpoint=""/>
+    <exposed-data id="3" icon="share" x="623" y="134.828125" name="Areas"/>
+    <exposed-data id="4" icon="share" x="624" y="212.828125" name="Treatments"/>
+    <data-source id="5" icon="database" x="311" y="133.828125" name="Areas" path="/pet/findByStatus"/>
+    <data-source id="6" icon="database" x="308" y="212.828125" name="Treatments" path="/store/inventory"/>
+    <exposed-data id="7" icon="share" x="624" y="294.828125" name="Vineyard"/>
+    <exposed-data id="8" icon="share" x="623" y="365.828125" name="Vineyard Encrypted"/>
+    <transformation-policy-doc id="9" icon="file-pen" x="483" y="295.828125" name="Rename policy" filename="VineyardCaseStudy/tasformationPolicies.xml/rename_policy.xml"/>
+    <transformation-policy-doc id="10" icon="file-pen" x="479" y="361.828125" name="Encrypt policy" filename="VineyardCaseStudy/tasformationPolicies.xml/EncryptPolicy.xml"/>
+    <data-usage-policy-doc id="11" icon="file-shield" x="905" y="237.828125" name="To user policy" filename="VineyardCaseStudy/accessControlPolicies/toUserPolicy.xml"/>
+    <data-usage-policy-doc id="12" icon="file-shield" x="914" y="366.828125" name="To Admin policy" filename="VineyardCaseStudy/accessControlPolicies/toAdminPolicy.xml"/>
+    <or-junction id="13" icon="junction-or" x="793" y="292.828125"/>
+    <data-usage-policy-doc id="14" icon="file-shield" x="770" y="368.828125" name="To owner policy" filename="VineyardCaseStudy/accessControlPolicies/toOwnerPolicy.xml"/>
+  </elements>
+  <connections>
+    <composed from="1" to="0"/>
+    <composed from="2" to="3"/>
+    <composed from="1" to="5"/>
+    <composed from="1" to="6"/>
+    <composed from="2" to="4"/>
+    <composed from="2" to="7"/>
+    <composed from="2" to="8"/>
+    <flow from="5" to="3"/>
+    <flow from="6" to="4"/>
+    <flow from="0" to="9"/>
+    <flow from="9" to="7"/>
+    <flow from="0" to="10"/>
+    <flow from="10" to="8"/>
+    <assigned from="11" to="13"/>
+    <assigned from="12" to="13"/>
+    <assigned from="13" to="7"/>
+    <assigned from="14" to="8"/>
+  </connections>
+</dspn-diagram>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="89" y="152.828125" name="Vineyard Data Product" endpoint="" openAPIUrl=""/>
+    <data-source id="1" icon="database" x="244" y="150.828125" name="Vineyard" path=""/>
+    <shared-data-product id="2" icon="share-nodes" x="711" y="151.828125" name="Vineyard Shared Data Product" endpoint=""/>
+    <exposed-data id="3" icon="share" x="557" y="152.828125" name="Vineyard"/>
+    <rename id="4" icon="pen" x="401" y="151.828125" name="Rename" expression="rename(vineyard.owner, vineyard.user)"/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <flow from="1" to="4"/>
+    <flow from="4" to="3"/>
+    <composed from="2" to="3"/>
+  </connections>
+</dspn-diagram>

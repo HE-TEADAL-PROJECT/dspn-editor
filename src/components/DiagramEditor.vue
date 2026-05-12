@@ -737,7 +737,7 @@ const connectionRules = {
   'policy-doc:exposed-data':              ['assigned'],
   ...Object.fromEntries(usageTypes.map(t => [`${t}:exposed-data`, ['assigned']])),
   ...Object.fromEntries(
-    transformationTypes.flatMap(a => transformationTypes.filter(b => b !== a).map(b => [`${a}:${b}`, ['flow']]))
+    transformationTypes.flatMap(a => transformationTypes.map(b => [`${a}:${b}`, ['flow']]))
   ),
   ...Object.fromEntries(
     attributeTypes.flatMap(a => [...transformationTypes, ...usageTypes].map(t => [`${a}:${t}`, ['access']]))

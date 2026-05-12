@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="224" y="73.19999694824219" name="Plant A Data Product" openAPIUrl=""/>
+    <data-product id="1" icon="cube" x="213" y="234.1999969482422" name="Plant B Data Product" openAPIUrl=""/>
+    <data-source id="2" icon="database" x="458" y="75.19999694824219" name="Sensors Plant A" path=""/>
+    <data-source id="3" icon="database" x="459" y="236.1999969482422" name="Sensors Plant A" path=""/>
+    <exposed-data id="4" icon="share" x="1098" y="170.1999969482422" name="KPIs"/>
+    <shared-data-product id="5" icon="share-nodes" x="1266" y="163.1999969482422" name="Industry 4.0 Shared Data Product" endpoint=""/>
+    <filter id="6" icon="filter" x="769" y="164.1999969482422" name="Aggegate" expression="aggregate(Trasformation.input)"/>
+    <projection id="7" icon="magnifying-glass" x="626" y="162.1999969482422" name="Remove non KPI fields" expression=""/>
+    <encryption id="8" icon="lock" x="938" y="168.1999969482422" name="Encryption" expression="Algorithm:EAS, keyLength : 256"/>
+  </elements>
+  <connections>
+    <composed from="0" to="2"/>
+    <composed from="1" to="3"/>
+    <composed from="5" to="4"/>
+    <flow from="2" to="7"/>
+    <flow from="3" to="7"/>
+    <flow from="7" to="6"/>
+    <flow from="6" to="8"/>
+    <flow from="8" to="4"/>
+  </connections>
+</dspn-diagram>
