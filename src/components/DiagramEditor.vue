@@ -144,7 +144,7 @@
                       type="text"
                       class="label-textarea"
                       v-model="item.text"
-                      :style="{ fontSize: (item.fontSize || 14) + 'px' }"
+                      :style="{ fontSize: (item.fontSize || 15) + 'px' }"
                       @blur="tab.editingLabelIndex = null; tab.isDirty = true"
                       @keydown.escape.stop="tab.editingLabelIndex = null"
                       @keydown.enter.stop="tab.editingLabelIndex = null"
@@ -152,7 +152,7 @@
                       @mousedown.stop
                       :ref="el => { if (el) el.focus() }"
                     />
-                    <span v-else class="placed-label-text" :style="{ fontSize: (item.fontSize || 14) + 'px' }">{{ item.text }}</span>
+                    <span v-else class="placed-label-text" :style="{ fontSize: (item.fontSize || 15) + 'px' }">{{ item.text }}</span>
                     <div class="group-resize-handle group-resize-handle--nw" @mousedown.stop="onGroupResizeMouseDown($event, index, 'nw', tab)"></div>
                     <div class="group-resize-handle group-resize-handle--ne" @mousedown.stop="onGroupResizeMouseDown($event, index, 'ne', tab)"></div>
                     <div class="group-resize-handle group-resize-handle--sw" @mousedown.stop="onGroupResizeMouseDown($event, index, 'sw', tab)"></div>
@@ -172,7 +172,7 @@
                       {{ item.name }}
                       <span v-if="item.expression" class="item-expression">[{{ item.expression }}]</span>
                       <span v-if="item.algorithm" class="item-expression">[{{ item.algorithm }}]</span>
-                      <span v-if="(item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="item-expression">[{{ item.filename }}]</span>
+                      <span v-if="(item.type === 'policy-doc' || item.type === 'transformation-policy') && item.filename" class="item-expression">[{{ basename(item.filename) }}]</span>
                     </span>
                   </template>
                   <button v-if="tab.selectedItem === index" class="delete-btn" @click.stop="deleteItem(index, tab)">
@@ -1240,7 +1240,7 @@ function onCanvasDrop(event, tab) {
     if (type === 'rename')              { item.name = `Rename ${count(type)}`;              item.expression = '' }
     if (type === 'usage')               { item.name = `Usage ${count(type)}`;               item.expression = '' }
     if (type === 'shared-data-product') { item.name = `Shared Data Product ${count(type)}`; item.endpoint = '' }
-    if (type === 'label') { item.text = ''; item.fontSize = 14; item.x = x - 100; item.y = y - 16; item.width = 200; item.height = 32 }
+    if (type === 'label') { item.text = ''; item.fontSize = 15; item.x = x - 100; item.y = y - 16; item.width = 200; item.height = 32 }
     if (type === 'group') { item.name = `Group ${count(type)}`; item.x = x - 100; item.y = y - 60; item.width = 200; item.height = 120 }
     pushUndo(tab)
     tab.placedItems.push(item)
@@ -1588,6 +1588,10 @@ function deleteItem(index, tab) {
 }
 
 // ── Styling helpers ───────────────────────────────────────────────────────────
+
+function basename(path) {
+  return path?.split('/').pop() ?? path
+}
 
 function iconColor(type) {
   const colors = {
@@ -2522,6 +2526,7 @@ function iconBgColor(type) {
   width: 100%;
   height: 100%;
   color: #333;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   padding: 0 4px;
@@ -2571,8 +2576,8 @@ function iconBgColor(type) {
   position: absolute;
   top: 5px;
   left: 8px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: calc(0.7rem + 1px);
+  font-weight: 700;
   color: #888;
   pointer-events: none;
 }
@@ -2594,22 +2599,23 @@ function iconBgColor(type) {
   align-items: center;
   justify-content: center;
   gap: 1px;
-  font-size: 0.65rem;
+  font-size: calc(0.65rem + 1px);
+  font-weight: 700;
   color: #333;
-  padding: 0 0.5rem;
+  padding: 0 2px;
   text-align: center;
   word-break: break-word;
   pointer-events: none;
 }
 
 .item-expression {
-  font-size: 0.6rem;
+  font-size: calc(0.6rem + 1px);
   color: #555;
   font-style: italic;
 }
 
 .item-mode-badge {
-  font-size: 0.55rem;
+  font-size: calc(0.55rem + 1px);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
