@@ -1,0 +1,397 @@
+openapi: 3.0.3
+info:
+  title: Sales Service API
+  description: |
+    Sample REST service that provides information about customers and sales.
+    Supports listing sales, listing sales by country, listing customers,
+    retrieving a customer by id, and creating new customers and sales.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: http://localhost:8080/v1
+    description: Local development server
+
+tags:
+  - name: Customers
+    description: Operations on customers
+  - name: Sales
+    description: Operations on sales
+
+paths:
+  /customers:
+    get:
+      tags: [Customers]
+      summary: List all customers
+      operationId: listCustomers
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: A list of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Customers]
+      summary: Add a new customer
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewCustomer'
+      responses:
+        '201':
+          description: Customer created
+          headers:
+            Location:
+              description: URL of the newly created customer
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /customers/{customerId}:
+    get:
+      tags: [Customers]
+      summary: Get a customer by id
+      operationId: getCustomerById
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: The requested customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sales:
+    get:
+      tags: [Sales]
+      summary: List all sales
+      operationId: listSales
+      parameters:
+        - name: customerId
+          in: query
+          description: Filter sales by customer id
+          required: false
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          description: Only sales on or after this date
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          description: Only sales on or before this date
+          required: false
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: A list of sales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sale'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Sales]
+      summary: Add a new sale
+      description: >
+        Records a new sale. The referenced customer must exist; the customer's
+        totalPurchases is increased by the sale amount.
+      operationId: createSale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSale'
+      responses:
+        '201':
+          description: Sale created
+          headers:
+            Location:
+              description: URL of the newly created sale
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sale'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Referenced customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sales/by-country:
+    get:
+      tags: [Sales]
+      summary: Sales totals grouped by country
+      description: >
+        Returns aggregated sales per country. The country of a sale is the
+        country in the address of the customer who made it.
+      operationId: getSalesByCountry
+      responses:
+        '200':
+          description: Sales summary per country
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CountrySalesSummary'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sales/by-country/{country}:
+    get:
+      tags: [Sales]
+      summary: List sales for a specific country
+      operationId: getSalesForCountry
+      parameters:
+        - name: country
+          in: path
+          required: true
+          description: ISO 3166-1 alpha-2 country code (e.g. IT, US)
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}$'
+            example: IT
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Sales made by customers located in the given country
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sale'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  parameters:
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      description: Unique identifier of the customer
+      schema:
+        type: string
+        example: C1001
+    Limit:
+      name: limit
+      in: query
+      description: Maximum number of items to return
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Offset:
+      name: offset
+      in: query
+      description: Number of items to skip before returning results
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  schemas:
+    Address:
+      type: object
+      required: [street, city, postalCode, country]
+      properties:
+        street:
+          type: string
+          example: Via Roma 10
+        city:
+          type: string
+          example: Milano
+        postalCode:
+          type: string
+          example: '20121'
+        state:
+          type: string
+          description: State, province or region (optional)
+          example: MI
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+          pattern: '^[A-Z]{2}$'
+          example: IT
+
+    Gender:
+      type: string
+      enum: [male, female, other, undisclosed]
+      example: female
+
+    NewCustomer:
+      type: object
+      required: [name, address, gender]
+      properties:
+        name:
+          type: string
+          example: Maria Rossi
+        address:
+          $ref: '#/components/schemas/Address'
+        gender:
+          $ref: '#/components/schemas/Gender'
+
+    Customer:
+      allOf:
+        - type: object
+          required: [id, totalPurchases]
+          properties:
+            id:
+              type: string
+              readOnly: true
+              example: C1001
+        - $ref: '#/components/schemas/NewCustomer'
+        - type: object
+          properties:
+            totalPurchases:
+              type: number
+              format: double
+              minimum: 0
+              description: Total amount bought by the customer in the past, in US dollars
+              readOnly: true
+              example: 1520.75
+
+    NewSale:
+      type: object
+      required: [customerId, article, saleDate, amount, bank]
+      properties:
+        customerId:
+          type: string
+          description: Id of the customer who made the purchase
+          example: C1001
+        article:
+          type: string
+          description: Article sold
+          example: Laptop Pro 14
+        saleDate:
+          type: string
+          format: date
+          example: '2026-10-15'
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          description: Amount of the sale, in US dollars
+          example: 1299.99
+        bank:
+          type: string
+          description: Bank used to transfer the money
+          example: Intesa Sanpaolo
+
+    Sale:
+      allOf:
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              readOnly: true
+              example: S50001
+        - $ref: '#/components/schemas/NewSale'
+
+    CountrySalesSummary:
+      type: object
+      required: [country, numberOfSales, totalAmount]
+      properties:
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+          example: IT
+        numberOfSales:
+          type: integer
+          minimum: 0
+          example: 42
+        totalAmount:
+          type: number
+          format: double
+          description: Total sales amount for the country, in US dollars
+          example: 58340.5
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: Customer not found
+
+  responses:
+    BadRequest:
+      description: Invalid request (malformed body or parameters)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
