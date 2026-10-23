@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dspn-diagram version="0.1">
+  <elements>
+    <data-product id="0" icon="cube" x="115" y="71.828125" name="Sales FDP" openAPIUrl="https://raw.githubusercontent.com/HE-TEADAL-PROJECT/dspn-editor/refs/heads/main/examples/dspn-files/DemoInterview/sales.json"/>
+    <data-source id="1" icon="database" x="118.10601719197709" y="186.8988031279847" name="Customers" path="/customers"/>
+    <shared-data-product id="2" icon="share-nodes" x="558.4126074498568" y="62.58075155205353" name="Sales SFDP" endpoint=""/>
+    <exposed-data id="3" icon="share" x="556.4126074498568" y="177.58075155205353" name="Encrypted Male customers"/>
+    <user-attributes id="4" icon="user" x="728.4126074498568" y="288.5807515520535" name="User Attributes" attributes="[&quot;group&quot;]"/>
+    <authorization id="5" icon="shield-halved" x="724.4126074498568" y="179.58075155205353" name="Authorization" expression="user.group = &quot;sales mgr&quot;"/>
+    <transformation-policy-doc id="6" icon="file-pen" x="342.6972301814709" y="182.04172636103152" name="Pipeline" filename="sales-sample-transformation-policy.xml"/>
+  </elements>
+  <connections>
+    <composed from="0" to="1"/>
+    <composed from="2" to="3"/>
+    <access from="4" to="5"/>
+    <assigned from="5" to="3"/>
+    <flow from="1" to="6"/>
+    <flow from="6" to="3"/>
+  </connections>
+</dspn-diagram>
